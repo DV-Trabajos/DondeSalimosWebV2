@@ -1,8 +1,14 @@
 // googleMapsService.js - Servicio de Google Maps API
 
+import axios from 'axios';
 import { GOOGLE_MAPS_API_KEY, SEARCH_CONFIG } from '../utils/constants';
 
 const GOOGLE_MAPS_BASE_URL = 'https://maps.googleapis.com/maps/api';
+const GEOCODING_URL = 'https://maps.googleapis.com/maps/api/geocode';
+
+const mapsClient = axios.create({
+  baseURL: GOOGLE_BASE_URL,
+});
 
 /**
  * Busca lugares cercanos usando Google Places API
@@ -39,6 +45,29 @@ export const nearbySearch = async (
     return data;
   } catch (error) {
     console.error('Error en nearbySearch:', error);
+    throw error;
+  }
+};
+
+export const nearByPlace = async (lat, lng, type, keyword, filters = {}) => {
+  try {
+    const params = new URLSearchParams({
+      location: `${lat},${lng}`,
+      radius: 10000,
+      type,
+      keyword,
+      key: GOOGLE_MAPS_API_KEY,
+    });
+
+    // Agregar filtros opcionales
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.append(key, value);
+    });
+
+    const response = await mapsClient.get(`/nearbysearch/json?${params}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error en nearByPlace:', error);
     throw error;
   }
 };
@@ -94,7 +123,7 @@ export const getPlaceDetails = async (placeId) => {
  * @param {string} address - Dirección
  * @returns {Promise<Object>} Coordenadas { lat, lng }
  */
-export const geocodeAddress = async (address) => {
+/*export const geocodeAddress = async (address) => {
   try {
     const params = new URLSearchParams({
       address,
@@ -110,6 +139,20 @@ export const geocodeAddress = async (address) => {
     }
 
     throw new Error('No se encontraron coordenadas para la dirección');
+  } catch (error) {
+    console.error('Error en geocodeAddress:', error);
+    throw error;
+  }
+};*/
+export const geocodeAddress = async (address) => {
+  try {
+    const response = await axios.get(`${GEOCODING_URL}/json`, {
+      params: {
+        address,
+        key: GOOGLE_MAPS_API_KEY,
+      },
+    });
+    return response.data;
   } catch (error) {
     console.error('Error en geocodeAddress:', error);
     throw error;
@@ -200,12 +243,30 @@ export const getAutocompleteSuggestions = async (input) => {
   }
 };
 
+export const getDetallesLugar = async (placeId) => {
+  try {
+    const response = await mapsClient.get('/details/json', {
+      params: {
+        place_id: placeId,
+        fields: 'name,formatted_phone_number,website',
+        key: GOOGLE_MAPS_API_KEY,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error en getDetallesLugar:', error);
+    throw error;
+  }
+};
+
 export default {
   nearbySearch,
+  nearByPlace,
   textSearch,
   getPlaceDetails,
   geocodeAddress,
   reverseGeocode,
   calculateDistance,
   getAutocompleteSuggestions,
+  getDetallesLugar
 };
