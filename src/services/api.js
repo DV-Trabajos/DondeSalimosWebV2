@@ -12,6 +12,89 @@ const api = axios.create({
   timeout: 30000, // 30 segundos
 });
 
+// Funciones de transformación
+const toCamelCase = (obj) => {
+  if (Array.isArray(obj)) {
+    return obj.map(v => toCamelCase(v));
+  } else if (obj !== null && obj.constructor === Object) {
+    return Object.keys(obj).reduce((result, key) => {
+      const camelKey = key.charAt(0).toLowerCase() + key.slice(1);
+      result[camelKey] = toCamelCase(obj[key]);
+      return result;
+    }, {});
+  }
+  return obj;
+};
+
+const toPascalCase = (obj) => {
+  if (Array.isArray(obj)) {
+    return obj.map(v => toPascalCase(v));
+  } else if (obj !== null && obj.constructor === Object) {
+    return Object.keys(obj).reduce((result, key) => {
+      const pascalKey = key.charAt(0).toUpperCase() + key.slice(1);
+      result[pascalKey] = toPascalCase(obj[key]);
+      return result;
+    }, {});
+  }
+  return obj;
+};
+
+// Transformar respuestas: PascalCase -> camelCase
+api.interceptors.response.use(
+  (response) => {
+    if (response.data) {
+      response.data = toCamelCase(response.data);
+    }
+    return response;
+  },
+  (error) => {
+    // Mantener el manejo de errores existente
+    if (error.response) {
+      const { status, data } = error.response;
+      
+      console.error(`❌ Error ${status}:`, data);
+      
+      switch (status) {
+        case 401:
+          clearJwtToken();
+          window.location.href = '/login';
+          error.message = MENSAJES.ERROR_AUTENTICACION;
+          break;
+        case 403:
+          error.message = 'No tienes permisos para realizar esta acción.';
+          break;
+        case 404:
+          error.message = data?.mensaje || data?.message || 'Recurso no encontrado.';
+          break;
+        case 500:
+          error.message = 'Error en el servidor. Intenta nuevamente.';
+          break;
+        default:
+          error.message = data?.mensaje || data?.message || MENSAJES.ERROR_GENERICO;
+      }
+    } else if (error.request) {
+      console.error('❌ No hay respuesta del servidor:', error.request);
+      error.message = MENSAJES.ERROR_CONEXION;
+    } else {
+      console.error('❌ Error configurando petición:', error.message);
+      error.message = MENSAJES.ERROR_GENERICO;
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
+// Transformar requests: camelCase -> PascalCase
+api.interceptors.request.use(
+  (config) => {
+    if (config.data) {
+      config.data = toPascalCase(config.data);
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 // Funciones de manejo de JWT en localStorage
 export const storeJwtToken = (token) => {
   try {

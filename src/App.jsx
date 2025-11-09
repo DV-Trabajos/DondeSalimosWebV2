@@ -67,7 +67,7 @@ function App() {
                 path="/reservations"
                 element={
                   <ProtectedRoute>
-                    <Reservas />
+                    <Reservations />
                   </ProtectedRoute>
                 }
               />
