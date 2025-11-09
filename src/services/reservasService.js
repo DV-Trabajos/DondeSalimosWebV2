@@ -1,4 +1,4 @@
-// reservasService.js - Servicio de gestión de reservas
+// reservasService.js - Servicio completo de reservas
 
 import { apiGet, apiPost, apiPut, apiDelete } from './api';
 
@@ -17,58 +17,40 @@ export const getAllReservas = async () => {
 };
 
 /**
- * Obtiene una reserva por ID
- * @param {number} id - ID de la reserva
- * @returns {Promise<Object>} Datos de la reserva
+ * Alias para getAllReservas (compatibilidad)
  */
-export const getReservaById = async (id) => {
-  try {
-    const response = await apiGet(`/api/reservas/buscarIdReserva/${id}`);
-    return response;
-  } catch (error) {
-    console.error('Error en getReservaById:', error);
-    throw error;
-  }
-};
+export const getReservas = getAllReservas;
 
 /**
- * Obtiene reservas de un usuario
- * @param {number} usuarioId - ID del usuario
+ * Obtiene reservas de un usuario específico
+ * @param {number} userId - ID del usuario
  * @returns {Promise<Array>} Lista de reservas del usuario
  */
-export const getReservasByUsuario = async (usuarioId) => {
+export const getReservasByUser = async (userId) => {
   try {
-    const response = await apiGet(`/api/reservas/buscarReservasPorUsuario/${usuarioId}`);
+    const response = await apiGet(`/api/reservas/buscarReservaUsuario/${userId}`);
     return response;
   } catch (error) {
-    console.error('Error en getReservasByUsuario:', error);
-    throw error;
-  }
-};
-
-/**
- * Obtiene reservas de un comercio
- * @param {number} comercioId - ID del comercio
- * @returns {Promise<Array>} Lista de reservas del comercio
- */
-export const getReservasByComercio = async (comercioId) => {
-  try {
-    const response = await apiGet(`/api/reservas/buscarReservasPorComercio/${comercioId}`);
-    return response;
-  } catch (error) {
-    console.error('Error en getReservasByComercio:', error);
+    console.error('Error en getReservasByUser:', error);
     throw error;
   }
 };
 
 /**
  * Crea una nueva reserva
- * @param {Object} reservaData - Datos de la reserva
+ * @param {Object} reserva - Datos de la reserva
+ * @param {number} reserva.iD_Usuario - ID del usuario
+ * @param {number} reserva.iD_Comercio - ID del comercio
+ * @param {string} reserva.fechaReserva - Fecha de la reserva (ISO format)
+ * @param {string} reserva.horaReserva - Hora de la reserva
+ * @param {number} reserva.cantidadPersonas - Cantidad de personas
+ * @param {string} reserva.comentarios - Comentarios adicionales (opcional)
+ * @param {boolean} reserva.estado - Estado de la reserva (default: false - pendiente)
  * @returns {Promise<Object>} Reserva creada
  */
-export const createReserva = async (reservaData) => {
+export const createReserva = async (reserva) => {
   try {
-    const response = await apiPost('/api/reservas/crear', reservaData);
+    const response = await apiPost('/api/reservas/crear', reserva);
     return response;
   } catch (error) {
     console.error('Error en createReserva:', error);
@@ -77,14 +59,14 @@ export const createReserva = async (reservaData) => {
 };
 
 /**
- * Actualiza una reserva
+ * Actualiza una reserva existente
  * @param {number} id - ID de la reserva
- * @param {Object} reservaData - Datos actualizados
- * @returns {Promise<Object>} Reserva actualizada
+ * @param {Object} reserva - Datos actualizados de la reserva
+ * @returns {Promise<Object>} Respuesta de la actualización
  */
-export const updateReserva = async (id, reservaData) => {
+export const updateReserva = async (id, reserva) => {
   try {
-    const response = await apiPut(`/api/reservas/actualizar/${id}`, reservaData);
+    const response = await apiPut(`/api/reservas/actualizar/${id}`, reserva);
     return response;
   } catch (error) {
     console.error('Error en updateReserva:', error);
@@ -93,39 +75,9 @@ export const updateReserva = async (id, reservaData) => {
 };
 
 /**
- * Cancela una reserva
- * @param {number} id - ID de la reserva
- * @returns {Promise<void>}
- */
-export const cancelReserva = async (id) => {
-  try {
-    const response = await apiPost(`/api/reservas/cancelar/${id}`);
-    return response;
-  } catch (error) {
-    console.error('Error en cancelReserva:', error);
-    throw error;
-  }
-};
-
-/**
- * Confirma una reserva
- * @param {number} id - ID de la reserva
- * @returns {Promise<void>}
- */
-export const confirmarReserva = async (id) => {
-  try {
-    const response = await apiPost(`/api/reservas/confirmar/${id}`);
-    return response;
-  } catch (error) {
-    console.error('Error en confirmarReserva:', error);
-    throw error;
-  }
-};
-
-/**
  * Elimina una reserva
  * @param {number} id - ID de la reserva
- * @returns {Promise<void>}
+ * @returns {Promise<Object>} Respuesta de la eliminación
  */
 export const deleteReserva = async (id) => {
   try {
@@ -138,81 +90,152 @@ export const deleteReserva = async (id) => {
 };
 
 /**
- * Obtiene reservas por estado
- * @param {string} estado - Estado de la reserva
- * @returns {Promise<Array>} Lista de reservas filtradas
+ * Aprueba una reserva (cambia estado a true)
+ * @param {number} id - ID de la reserva
+ * @param {Object} reserva - Datos completos de la reserva
+ * @returns {Promise<Object>} Reserva actualizada
  */
-export const getReservasByEstado = async (estado) => {
+export const approveReserva = async (id, reserva) => {
   try {
-    const reservas = await getAllReservas();
-    return reservas.filter(r => r.estado === estado);
+    const updatedReserva = {
+      ...reserva,
+      estado: true,
+      motivoRechazo: null,
+    };
+    const response = await updateReserva(id, updatedReserva);
+    return response;
   } catch (error) {
-    console.error('Error en getReservasByEstado:', error);
+    console.error('Error en approveReserva:', error);
     throw error;
   }
 };
 
 /**
- * Obtiene reservas pendientes de un usuario
- * @param {number} usuarioId - ID del usuario
- * @returns {Promise<Array>} Lista de reservas pendientes
+ * Rechaza una reserva (cambia estado a false con motivo)
+ * @param {number} id - ID de la reserva
+ * @param {Object} reserva - Datos completos de la reserva
+ * @param {string} motivo - Motivo del rechazo
+ * @returns {Promise<Object>} Reserva actualizada
  */
-export const getReservasPendientes = async (usuarioId) => {
+export const rejectReserva = async (id, reserva, motivo) => {
   try {
-    const reservas = await getReservasByUsuario(usuarioId);
-    return reservas.filter(r => r.estado === 'Pendiente');
+    const updatedReserva = {
+      ...reserva,
+      estado: false,
+      motivoRechazo: motivo,
+    };
+    const response = await updateReserva(id, updatedReserva);
+    return response;
   } catch (error) {
-    console.error('Error en getReservasPendientes:', error);
+    console.error('Error en rejectReserva:', error);
     throw error;
   }
 };
 
 /**
- * Obtiene reservas confirmadas de un usuario
- * @param {number} usuarioId - ID del usuario
- * @returns {Promise<Array>} Lista de reservas confirmadas
+ * Filtra reservas por estado
+ * @param {Array} reservas - Lista de reservas
+ * @param {boolean} estado - Estado a filtrar (true = aprobadas, false = rechazadas, null = pendientes)
+ * @returns {Array} Reservas filtradas
  */
-export const getReservasConfirmadas = async (usuarioId) => {
-  try {
-    const reservas = await getReservasByUsuario(usuarioId);
-    return reservas.filter(r => r.estado === 'Confirmada');
-  } catch (error) {
-    console.error('Error en getReservasConfirmadas:', error);
-    throw error;
+export const filterReservasByEstado = (reservas, estado) => {
+  if (estado === null) {
+    // Pendientes: estado false y sin motivo de rechazo
+    return reservas.filter(r => r.estado === false && !r.motivoRechazo);
   }
+  return reservas.filter(r => r.estado === estado);
 };
 
 /**
- * Obtiene próximas reservas de un usuario
- * @param {number} usuarioId - ID del usuario
- * @returns {Promise<Array>} Lista de próximas reservas
+ * Filtra reservas por comercio
+ * @param {Array} reservas - Lista de reservas
+ * @param {number} comercioId - ID del comercio
+ * @returns {Array} Reservas del comercio
  */
-export const getProximasReservas = async (usuarioId) => {
-  try {
-    const reservas = await getReservasByUsuario(usuarioId);
-    const now = new Date();
-    return reservas.filter(r => {
-      const fechaReserva = new Date(r.fechaReserva);
-      return fechaReserva > now && r.estado !== 'Cancelada';
-    });
-  } catch (error) {
-    console.error('Error en getProximasReservas:', error);
-    throw error;
-  }
+export const filterReservasByComercio = (reservas, comercioId) => {
+  return reservas.filter(r => r.iD_Comercio === comercioId);
+};
+
+/**
+ * Filtra reservas por usuario
+ * @param {Array} reservas - Lista de reservas
+ * @param {number} userId - ID del usuario
+ * @returns {Array} Reservas del usuario
+ */
+export const filterReservasByUsuario = (reservas, userId) => {
+  return reservas.filter(r => r.iD_Usuario === userId);
+};
+
+/**
+ * Obtiene reservas futuras
+ * @param {Array} reservas - Lista de reservas
+ * @returns {Array} Reservas futuras
+ */
+export const getFutureReservas = (reservas) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  return reservas.filter(r => {
+    const reservaDate = new Date(r.fechaReserva);
+    reservaDate.setHours(0, 0, 0, 0);
+    return reservaDate >= today;
+  });
+};
+
+/**
+ * Obtiene reservas pasadas
+ * @param {Array} reservas - Lista de reservas
+ * @returns {Array} Reservas pasadas
+ */
+export const getPastReservas = (reservas) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  return reservas.filter(r => {
+    const reservaDate = new Date(r.fechaReserva);
+    reservaDate.setHours(0, 0, 0, 0);
+    return reservaDate < today;
+  });
+};
+
+/**
+ * Valida si una fecha de reserva es válida (futura)
+ * @param {string} fecha - Fecha a validar (ISO format)
+ * @returns {boolean} true si es válida
+ */
+export const isValidReservaDate = (fecha) => {
+  const reservaDate = new Date(fecha);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return reservaDate >= today;
+};
+
+/**
+ * Cuenta reservas pendientes de un comercio
+ * @param {Array} reservas - Lista de reservas
+ * @param {number} comercioId - ID del comercio
+ * @returns {number} Cantidad de reservas pendientes
+ */
+export const countPendingReservas = (reservas, comercioId) => {
+  return filterReservasByEstado(reservas, null)
+    .filter(r => r.iD_Comercio === comercioId)
+    .length;
 };
 
 export default {
   getAllReservas,
-  getReservaById,
-  getReservasByUsuario,
-  getReservasByComercio,
+  getReservas,
+  getReservasByUser,
   createReserva,
   updateReserva,
-  cancelReserva,
-  confirmarReserva,
   deleteReserva,
-  getReservasByEstado,
-  getReservasPendientes,
-  getReservasConfirmadas,
-  getProximasReservas,
+  approveReserva,
+  rejectReserva,
+  filterReservasByEstado,
+  filterReservasByComercio,
+  filterReservasByUsuario,
+  getFutureReservas,
+  getPastReservas,
+  isValidReservaDate,
+  countPendingReservas,
 };

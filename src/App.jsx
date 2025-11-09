@@ -11,8 +11,10 @@ import { AdminGuard, BarOwnerGuard } from './components/Auth/RoleGuard';
 // Pages
 import Home from './pages/Home';
 import Login from './pages/Login';
-import BarManagement from './pages/BarManagement';
 import Profile from './pages/Profile';
+import BarManagement from './pages/BarManagement';
+import Reservations from './pages/Reservations';
+import AdminPanel from './pages/AdminPanel';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -42,18 +44,7 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <AdminGuard>
-                      <div className="min-h-screen bg-gray-50 p-8">
-                        <div className="max-w-7xl mx-auto">
-                          <div className="bg-white rounded-lg shadow-md p-8">
-                            <h1 className="text-3xl font-bold text-gray-800 mb-4">
-                              Panel de Administración
-                            </h1>
-                            <p className="text-gray-600">
-                              🚧 Esta página se completará en la Parte 6
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                      <AdminPanel />
                     </AdminGuard>
                   </ProtectedRoute>
                 }
@@ -73,21 +64,10 @@ function App() {
 
               {/* Ruta de reservas */}
               <Route
-                path="/reservas"
+                path="/reservations"
                 element={
                   <ProtectedRoute>
-                    <div className="min-h-screen bg-gray-50 p-8">
-                      <div className="max-w-7xl mx-auto">
-                        <div className="bg-white rounded-lg shadow-md p-8">
-                          <h1 className="text-3xl font-bold text-gray-800 mb-4">
-                            Mis Reservas
-                          </h1>
-                          <p className="text-gray-600">
-                            🚧 Esta página se completará en la Parte 7
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                    <Reservas />
                   </ProtectedRoute>
                 }
               />

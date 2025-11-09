@@ -1,123 +1,195 @@
-// SearchBar.jsx - Barra de búsqueda de lugares
+// SearchBar.jsx - Barra de búsqueda con filtros
 
-import { useState } from 'react';
-import { Search, X, Filter } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Filter, X, MapPin } from 'lucide-react';
 import { useDebounce } from '../../hooks/useDebounce';
-import { TIPOS_COMERCIO_DESCRIPCION } from '../../utils/constants';
+
+const TIPOS_COMERCIO = [
+  { id: 'all', label: 'Todos' },
+  { id: 1, label: 'Bar' },
+  { id: 2, label: 'Boliche/Club' },
+  { id: 3, label: 'Restaurante' },
+  { id: 4, label: 'Café' },
+];
 
 /**
- * Componente de búsqueda con filtros
+ * Componente de barra de búsqueda con filtros
  * @param {Object} props
- * @param {function} props.onSearch - Callback cuando se busca
- * @param {function} props.onFilterChange - Callback cuando cambia el filtro
+ * @param {Function} props.onSearch - Callback con (searchTerm, filters)
  * @param {boolean} props.isLoading - Estado de carga
  */
-const SearchBar = ({ onSearch, onFilterChange, isLoading = false }) => {
+const SearchBar = ({ onSearch, isLoading = false }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
-
-  // Debounce para evitar muchas búsquedas mientras escribe
+  const [sortBy, setSortBy] = useState('name'); // 'name', 'rating', 'distance'
+  
+  // Debounce del término de búsqueda (500ms)
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  // Ejecutar búsqueda cuando cambia el término debounced
-  useState(() => {
-    if (onSearch && debouncedSearchTerm !== undefined) {
-      onSearch(debouncedSearchTerm, selectedType);
-    }
-  }, [debouncedSearchTerm, selectedType]);
+  // Ejecutar búsqueda cuando cambie el término con debounce o los filtros
+  useEffect(() => {
+    handleSearch();
+  }, [debouncedSearchTerm, selectedType, sortBy]);
+
+  const handleSearch = () => {
+    const filters = {
+      type: selectedType,
+      sortBy,
+    };
+
+    onSearch(debouncedSearchTerm, filters);
+  };
 
   const handleClear = () => {
     setSearchTerm('');
-    if (onSearch) {
-      onSearch('', selectedType);
-    }
+    setSelectedType('all');
+    setSortBy('name');
+    onSearch('', { type: 'all', sortBy: 'name' });
   };
 
-  const handleTypeChange = (type) => {
-    setSelectedType(type);
-    if (onFilterChange) {
-      onFilterChange(type);
-    }
-    if (onSearch) {
-      onSearch(searchTerm, type);
-    }
-  };
-
-  const tiposComercio = [
-    { id: 'all', label: 'Todos' },
-    ...Object.entries(TIPOS_COMERCIO_DESCRIPCION).map(([id, label]) => ({
-      id,
-      label,
-    })),
-  ];
+  const hasActiveFilters = selectedType !== 'all' || sortBy !== 'name';
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4">
-      {/* Barra de búsqueda principal */}
+    <div className="w-full">
+      {/* Barra principal de búsqueda */}
       <div className="flex gap-2">
+        {/* Input de búsqueda */}
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar bares, restaurantes, cafés..."
-            className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            disabled={isLoading}
-          />
-          {searchTerm && (
-            <button
-              onClick={handleClear}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          )}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Buscar por nombre..."
+              disabled={isLoading}
+              className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
         </div>
 
+        {/* Botón de filtros */}
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className={`px-4 py-3 border rounded-lg transition flex items-center gap-2 ${
-            showFilters
+          className={`px-4 py-3 border rounded-lg flex items-center gap-2 transition ${
+            showFilters || hasActiveFilters
               ? 'bg-primary text-white border-primary'
-              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              : 'bg-white border-gray-300 hover:bg-gray-50'
           }`}
         >
           <Filter className="w-5 h-5" />
           <span className="hidden sm:inline">Filtros</span>
+          {hasActiveFilters && (
+            <span className="bg-white text-primary rounded-full w-5 h-5 text-xs flex items-center justify-center font-bold">
+              !
+            </span>
+          )}
         </button>
+
+        {/* Botón de limpiar */}
+        {(searchTerm || hasActiveFilters) && (
+          <button
+            onClick={handleClear}
+            className="px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition flex items-center gap-2"
+          >
+            <X className="w-5 h-5" />
+            <span className="hidden sm:inline">Limpiar</span>
+          </button>
+        )}
       </div>
 
-      {/* Panel de filtros */}
+      {/* Panel de filtros expandible */}
       {showFilters && (
-        <div className="mt-4 pt-4 border-t">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">
-            Tipo de Lugar
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {tiposComercio.map((tipo) => (
-              <button
-                key={tipo.id}
-                onClick={() => handleTypeChange(tipo.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                  selectedType === tipo.id
-                    ? 'bg-primary text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+        <div className="mt-4 p-4 bg-white border border-gray-200 rounded-lg shadow-md">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Filtro de tipo */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Tipo de comercio
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {TIPOS_COMERCIO.map((tipo) => (
+                  <button
+                    key={tipo.id}
+                    onClick={() => setSelectedType(tipo.id)}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                      selectedType === tipo.id
+                        ? 'bg-primary text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {tipo.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Ordenar por */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Ordenar por
+              </label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               >
-                {tipo.label}
-              </button>
-            ))}
+                <option value="name">Nombre (A-Z)</option>
+                <option value="rating">Mejor calificación</option>
+                <option value="distance">Más cercano</option>
+              </select>
+            </div>
           </div>
+
+          {/* Resumen de filtros activos */}
+          {hasActiveFilters && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-600 mb-2">Filtros activos:</p>
+              <div className="flex flex-wrap gap-2">
+                {selectedType !== 'all' && (
+                  <span className="px-3 py-1 bg-primary text-white text-sm rounded-full flex items-center gap-1">
+                    {TIPOS_COMERCIO.find(t => t.id === selectedType)?.label}
+                    <button
+                      onClick={() => setSelectedType('all')}
+                      className="hover:bg-purple-600 rounded-full p-0.5"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {sortBy !== 'name' && (
+                  <span className="px-3 py-1 bg-primary text-white text-sm rounded-full flex items-center gap-1">
+                    Orden: {sortBy === 'rating' ? 'Calificación' : 'Distancia'}
+                    <button
+                      onClick={() => setSortBy('name')}
+                      className="hover:bg-purple-600 rounded-full p-0.5"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Indicador de carga */}
-      {isLoading && (
-        <div className="mt-3 flex items-center gap-2 text-gray-600 text-sm">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-          <span>Buscando...</span>
+      {/* Indicador de búsqueda activa */}
+      {searchTerm && (
+        <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
+          <MapPin className="w-4 h-4" />
+          <span>
+            Buscando: <strong>{searchTerm}</strong>
+          </span>
         </div>
       )}
     </div>

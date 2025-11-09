@@ -28,7 +28,7 @@ const Header = () => {
 
   const menuItems = [
     { label: 'Inicio', path: '/', icon: Home, show: true },
-    { label: 'Mis Reservas', path: '/reservas', icon: Calendar, show: isAuthenticated },
+    { label: 'Mis Reservas', path: '/reservations', icon: Calendar, show: isAuthenticated },
     { label: 'Mis Comercios', path: '/bar-management', icon: Store, show: isBarOwner },
     { label: 'Admin Panel', path: '/admin', icon: Shield, show: isAdmin },
   ];
@@ -134,6 +134,12 @@ const Header = () => {
                   >
                     <User className="w-5 h-5" />
                     Mi Perfil
+                  </Link>
+                  <Link
+                    to="/reservas"
+                    className="text-gray-700 hover:text-primary transition font-medium"
+                  >
+                    Mis Reservas
                   </Link>
                   <button
                     onClick={handleLogout}

@@ -1,184 +1,227 @@
-// formatters.js - Funciones de formateo de datos
+// formatters.js - Funciones de formateo
 
 /**
- * Formatea una fecha a formato legible
- * @param {string|Date} date - Fecha a formatear
- * @param {boolean} includeTime - Incluir hora
+ * Convierte Base64 a URL de imagen
+ * @param {string} base64 - String en Base64
+ * @returns {string} URL de la imagen
+ */
+export const convertBase64ToImage = (base64) => {
+  if (!base64) return null;
+  
+  // Si ya tiene el prefijo data:image, devolverlo tal cual
+  if (base64.startsWith('data:image/')) {
+    return base64;
+  }
+  
+  // Agregar el prefijo por defecto (jpeg)
+  return `data:image/jpeg;base64,${base64}`;
+};
+
+/**
+ * Formatea una fecha a formato DD/MM/YYYY
+ * @param {Date|string} date - Fecha a formatear
  * @returns {string} Fecha formateada
  */
-export const formatDate = (date, includeTime = false) => {
-  if (!date) return '-';
+export const formatDate = (date) => {
+  if (!date) return '';
   
-  const dateObj = new Date(date);
-  
-  if (isNaN(dateObj.getTime())) return '-';
-  
-  const day = dateObj.getDate().toString().padStart(2, '0');
-  const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
-  const year = dateObj.getFullYear();
-  
-  if (includeTime) {
-    const hours = dateObj.getHours().toString().padStart(2, '0');
-    const minutes = dateObj.getMinutes().toString().padStart(2, '0');
-    return `${day}/${month}/${year} ${hours}:${minutes}`;
-  }
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
   
   return `${day}/${month}/${year}`;
 };
 
 /**
- * Formatea un número como moneda (pesos argentinos)
- * @param {number} amount - Monto a formatear
- * @returns {string} Monto formateado
+ * Formatea una hora a formato HH:MM
+ * @param {Date|string} date - Fecha con hora
+ * @returns {string} Hora formateada
  */
-export const formatCurrency = (amount) => {
-  if (amount === null || amount === undefined) return '-';
+export const formatTime = (date) => {
+  if (!date) return '';
   
-  return new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    minimumFractionDigits: 2,
-  }).format(amount);
+  const d = new Date(date);
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  
+  return `${hours}:${minutes}`;
 };
 
 /**
- * Formatea un número con separador de miles
- * @param {number} number - Número a formatear
- * @returns {string} Número formateado
+ * Formatea una fecha completa con hora
+ * @param {Date|string} date - Fecha a formatear
+ * @returns {string} Fecha y hora formateada
  */
-export const formatNumber = (number) => {
-  if (number === null || number === undefined) return '-';
+export const formatDateTime = (date) => {
+  if (!date) return '';
   
-  return new Intl.NumberFormat('es-AR').format(number);
+  return `${formatDate(date)} ${formatTime(date)}`;
+};
+
+/**
+ * Convierte una fecha a formato relativo (hace X días)
+ * @param {Date|string} date - Fecha a convertir
+ * @returns {string} Texto relativo
+ */
+export const getRelativeTime = (date) => {
+  if (!date) return '';
+  
+  const d = new Date(date);
+  const now = new Date();
+  const diffMs = now - d;
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffSeconds < 60) {
+    return 'Hace un momento';
+  } else if (diffMinutes < 60) {
+    return `Hace ${diffMinutes} ${diffMinutes === 1 ? 'minuto' : 'minutos'}`;
+  } else if (diffHours < 24) {
+    return `Hace ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
+  } else if (diffDays < 7) {
+    return `Hace ${diffDays} ${diffDays === 1 ? 'día' : 'días'}`;
+  } else {
+    return formatDate(date);
+  }
 };
 
 /**
  * Formatea un número de teléfono
- * @param {string} phone - Teléfono a formatear
+ * @param {string} phone - Número de teléfono
  * @returns {string} Teléfono formateado
  */
-export const formatPhone = (phone) => {
-  if (!phone) return '-';
+export const formatPhoneNumber = (phone) => {
+  if (!phone) return '';
   
-  // Eliminar todo lo que no sea número
-  const numeros = phone.replace(/\D/g, '');
+  // Eliminar caracteres no numéricos
+  const cleaned = phone.replace(/\D/g, '');
   
-  // Formato argentino: +54 9 11 1234-5678 o similar
-  if (numeros.length === 10) {
-    return `(${numeros.slice(0, 3)}) ${numeros.slice(3, 7)}-${numeros.slice(7)}`;
-  }
-  
-  if (numeros.length === 11) {
-    return `(${numeros.slice(0, 4)}) ${numeros.slice(4, 8)}-${numeros.slice(8)}`;
+  // Formato: +54 11 1234-5678
+  if (cleaned.length === 10) {
+    return `${cleaned.slice(0, 2)} ${cleaned.slice(2, 6)}-${cleaned.slice(6)}`;
   }
   
   return phone;
 };
 
 /**
- * Trunca un texto largo
+ * Formatea un CUIT
+ * @param {string} cuit - CUIT a formatear
+ * @returns {string} CUIT formateado
+ */
+export const formatCUIT = (cuit) => {
+  if (!cuit) return '';
+  
+  // Eliminar guiones existentes
+  const cleaned = cuit.replace(/-/g, '');
+  
+  // Formato: XX-XXXXXXXX-X
+  if (cleaned.length === 11) {
+    return `${cleaned.slice(0, 2)}-${cleaned.slice(2, 10)}-${cleaned.slice(10)}`;
+  }
+  
+  return cuit;
+};
+
+/**
+ * Trunca un texto a una longitud específica
  * @param {string} text - Texto a truncar
  * @param {number} maxLength - Longitud máxima
  * @returns {string} Texto truncado
  */
 export const truncateText = (text, maxLength = 100) => {
-  if (!text) return '';
+  if (!text || text.length <= maxLength) return text;
   
-  if (text.length <= maxLength) return text;
-  
-  return text.slice(0, maxLength) + '...';
+  return `${text.substring(0, maxLength)}...`;
 };
 
 /**
- * Capitaliza la primera letra de cada palabra
- * @param {string} text - Texto a capitalizar
- * @returns {string} Texto capitalizado
+ * Formatea un precio en pesos argentinos
+ * @param {number} amount - Monto
+ * @returns {string} Precio formateado
  */
-export const capitalizeWords = (text) => {
-  if (!text) return '';
+export const formatPrice = (amount) => {
+  if (amount === null || amount === undefined) return '';
   
-  return text
-    .toLowerCase()
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+  }).format(amount);
 };
 
 /**
- * Formatea una dirección completa
- * @param {Object} address - Objeto con datos de dirección
- * @returns {string} Dirección formateada
+ * Capitaliza la primera letra de un string
+ * @param {string} str - String a capitalizar
+ * @returns {string} String capitalizado
  */
-export const formatAddress = (address) => {
-  if (!address) return '-';
+export const capitalize = (str) => {
+  if (!str) return '';
   
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
+
+/**
+ * Formatea un nombre completo
+ * @param {string} firstName - Nombre
+ * @param {string} lastName - Apellido
+ * @returns {string} Nombre completo formateado
+ */
+export const formatFullName = (firstName, lastName) => {
   const parts = [];
   
-  if (address.calle) parts.push(address.calle);
-  if (address.numero) parts.push(address.numero);
-  if (address.ciudad) parts.push(address.ciudad);
-  if (address.provincia) parts.push(address.provincia);
+  if (firstName) parts.push(capitalize(firstName));
+  if (lastName) parts.push(capitalize(lastName));
   
-  return parts.join(', ') || '-';
+  return parts.join(' ');
 };
 
 /**
- * Convierte Base64 a URL de imagen
- * @param {string} base64 - String base64
- * @returns {string} URL de imagen
+ * Valida un email
+ * @param {string} email - Email a validar
+ * @returns {boolean} true si es válido
  */
-export const convertBase64ToImage = (base64) => {
-  if (!base64) return null;
+export const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+/**
+ * Valida un CUIT argentino
+ * @param {string} cuit - CUIT a validar
+ * @returns {boolean} true si es válido
+ */
+export const isValidCUIT = (cuit) => {
+  const cleaned = cuit.replace(/-/g, '');
   
-  // Si ya tiene el prefijo data:image, devolverlo tal cual
-  if (base64.startsWith('data:image')) {
-    return base64;
+  if (cleaned.length !== 11 || !/^\d+$/.test(cleaned)) {
+    return false;
   }
   
-  // Si no tiene el prefijo, agregarlo
-  return `data:image/jpeg;base64,${base64}`;
-};
-
-/**
- * Calcula el tiempo transcurrido desde una fecha
- * @param {string|Date} date - Fecha
- * @returns {string} Tiempo transcurrido
- */
-export const timeAgo = (date) => {
-  if (!date) return '-';
+  // Validar dígito verificador
+  const multipliers = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
+  let sum = 0;
   
-  const dateObj = new Date(date);
-  const now = new Date();
-  const seconds = Math.floor((now - dateObj) / 1000);
-  
-  const intervals = {
-    año: 31536000,
-    mes: 2592000,
-    semana: 604800,
-    día: 86400,
-    hora: 3600,
-    minuto: 60,
-  };
-  
-  for (const [name, secondsInInterval] of Object.entries(intervals)) {
-    const interval = Math.floor(seconds / secondsInInterval);
-    
-    if (interval >= 1) {
-      const plural = interval > 1 ? 's' : '';
-      return `Hace ${interval} ${name}${plural}`;
-    }
+  for (let i = 0; i < 10; i++) {
+    sum += parseInt(cleaned[i]) * multipliers[i];
   }
   
-  return 'Hace un momento';
+  let checkDigit = 11 - (sum % 11);
+  if (checkDigit === 11) checkDigit = 0;
+  if (checkDigit === 10) checkDigit = 9;
+  
+  return checkDigit === parseInt(cleaned[10]);
 };
 
 /**
- * Extrae las iniciales de un nombre
+ * Obtiene las iniciales de un nombre
  * @param {string} name - Nombre completo
  * @returns {string} Iniciales
  */
 export const getInitials = (name) => {
-  if (!name) return '??';
+  if (!name) return '';
   
   const parts = name.trim().split(' ');
   
@@ -186,62 +229,48 @@ export const getInitials = (name) => {
     return parts[0].charAt(0).toUpperCase();
   }
   
-  return (
-    parts[0].charAt(0).toUpperCase() + 
-    parts[parts.length - 1].charAt(0).toUpperCase()
-  );
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 };
 
 /**
- * Valida y formatea un email
- * @param {string} email - Email
- * @returns {string} Email en minúsculas
+ * Formatea un número con separadores de miles
+ * @param {number} num - Número a formatear
+ * @returns {string} Número formateado
  */
-export const formatEmail = (email) => {
-  if (!email) return '';
-  return email.toLowerCase().trim();
+export const formatNumber = (num) => {
+  if (num === null || num === undefined) return '0';
+  
+  return new Intl.NumberFormat('es-AR').format(num);
 };
 
 /**
- * Formatea un porcentaje
- * @param {number} value - Valor decimal (0-1)
- * @param {number} decimals - Decimales a mostrar
- * @returns {string} Porcentaje formateado
+ * Calcula los días entre dos fechas
+ * @param {Date|string} date1 - Primera fecha
+ * @param {Date|string} date2 - Segunda fecha
+ * @returns {number} Días de diferencia
  */
-export const formatPercentage = (value, decimals = 0) => {
-  if (value === null || value === undefined) return '-';
-  
-  return `${(value * 100).toFixed(decimals)}%`;
-};
-
-/**
- * Formatea una distancia en metros o kilómetros
- * @param {number} meters - Distancia en metros
- * @returns {string} Distancia formateada
- */
-export const formatDistance = (meters) => {
-  if (meters === null || meters === undefined) return '-';
-  
-  if (meters < 1000) {
-    return `${Math.round(meters)} m`;
-  }
-  
-  const kilometers = meters / 1000;
-  return `${kilometers.toFixed(1)} km`;
+export const getDaysBetween = (date1, date2) => {
+  const d1 = new Date(date1);
+  const d2 = new Date(date2);
+  const diffTime = Math.abs(d2 - d1);
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
 export default {
-  formatDate,
-  formatCurrency,
-  formatNumber,
-  formatPhone,
-  truncateText,
-  capitalizeWords,
-  formatAddress,
   convertBase64ToImage,
-  timeAgo,
+  formatDate,
+  formatTime,
+  formatDateTime,
+  getRelativeTime,
+  formatPhoneNumber,
+  formatCUIT,
+  truncateText,
+  formatPrice,
+  capitalize,
+  formatFullName,
+  isValidEmail,
+  isValidCUIT,
   getInitials,
-  formatEmail,
-  formatPercentage,
-  formatDistance,
+  formatNumber,
+  getDaysBetween,
 };

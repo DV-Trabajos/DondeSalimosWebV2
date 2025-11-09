@@ -1,4 +1,4 @@
-// comerciosService.js - Servicio de comercios/bares
+// comerciosService.js - Servicio completo de comercios
 
 import { apiGet, apiPost, apiPut, apiDelete } from './api';
 
@@ -33,8 +33,8 @@ export const getComercioById = async (id) => {
 
 /**
  * Busca comercios por nombre
- * @param {string} nombre - Nombre a buscar
- * @returns {Promise<Array>} Lista de comercios
+ * @param {string} nombre - Nombre o parte del nombre
+ * @returns {Promise<Array>} Lista de comercios encontrados
  */
 export const searchComerciosByName = async (nombre) => {
   try {
@@ -48,12 +48,12 @@ export const searchComerciosByName = async (nombre) => {
 
 /**
  * Obtiene comercios de un usuario específico
- * @param {number} usuarioId - ID del usuario
+ * @param {number} userId - ID del usuario
  * @returns {Promise<Array>} Lista de comercios del usuario
  */
-export const getComerciosByUsuario = async (usuarioId) => {
+export const getComerciosByUsuario = async (userId) => {
   try {
-    const response = await apiGet(`/api/comercios/buscarComerciosPorUsuario/${usuarioId}`);
+    const response = await apiGet(`/api/comercios/buscarComerciosPorUsuario/${userId}`);
     return response;
   } catch (error) {
     console.error('Error en getComerciosByUsuario:', error);
@@ -63,12 +63,12 @@ export const getComerciosByUsuario = async (usuarioId) => {
 
 /**
  * Crea un nuevo comercio
- * @param {Object} comercioData - Datos del comercio
+ * @param {Object} comercio - Datos del comercio
  * @returns {Promise<Object>} Comercio creado
  */
-export const createComercio = async (comercioData) => {
+export const createComercio = async (comercio) => {
   try {
-    const response = await apiPost('/api/comercios/crear', comercioData);
+    const response = await apiPost('/api/comercios/crear', comercio);
     return response;
   } catch (error) {
     console.error('Error en createComercio:', error);
@@ -79,12 +79,12 @@ export const createComercio = async (comercioData) => {
 /**
  * Actualiza un comercio existente
  * @param {number} id - ID del comercio
- * @param {Object} comercioData - Datos actualizados
- * @returns {Promise<Object>} Comercio actualizado
+ * @param {Object} comercio - Datos actualizados
+ * @returns {Promise<Object>} Respuesta de la actualización
  */
-export const updateComercio = async (id, comercioData) => {
+export const updateComercio = async (id, comercio) => {
   try {
-    const response = await apiPut(`/api/comercios/actualizar/${id}`, comercioData);
+    const response = await apiPut(`/api/comercios/actualizar/${id}`, comercio);
     return response;
   } catch (error) {
     console.error('Error en updateComercio:', error);
@@ -95,7 +95,7 @@ export const updateComercio = async (id, comercioData) => {
 /**
  * Elimina un comercio
  * @param {number} id - ID del comercio
- * @returns {Promise<void>}
+ * @returns {Promise<Object>} Respuesta de la eliminación
  */
 export const deleteComercio = async (id) => {
   try {
@@ -108,46 +108,72 @@ export const deleteComercio = async (id) => {
 };
 
 /**
- * Obtiene comercios filtrados por tipo
+ * Filtra comercios aprobados
+ * @param {Array} comercios - Lista de comercios
+ * @returns {Array} Comercios aprobados
+ */
+export const filterApprovedComercios = (comercios) => {
+  return comercios.filter(c => c.estado === true);
+};
+
+/**
+ * Filtra comercios por tipo
+ * @param {Array} comercios - Lista de comercios
  * @param {number} tipoId - ID del tipo de comercio
- * @returns {Promise<Array>} Lista de comercios filtrados
+ * @returns {Array} Comercios filtrados
  */
-export const getComerciosByTipo = async (tipoId) => {
-  try {
-    const comercios = await getAllComercios();
-    return comercios.filter(c => c.iD_TipoComercio === tipoId);
-  } catch (error) {
-    console.error('Error en getComerciosByTipo:', error);
-    throw error;
-  }
+export const filterComerciosByType = (comercios, tipoId) => {
+  if (!tipoId || tipoId === 'all') return comercios;
+  return comercios.filter(c => c.iD_TipoComercio === parseInt(tipoId));
 };
 
 /**
- * Obtiene comercios aprobados
- * @returns {Promise<Array>} Lista de comercios aprobados
+ * Calcula la distancia entre dos puntos (en metros)
+ * @param {number} lat1 - Latitud punto 1
+ * @param {number} lng1 - Longitud punto 1
+ * @param {number} lat2 - Latitud punto 2
+ * @param {number} lng2 - Longitud punto 2
+ * @returns {number} Distancia en metros
  */
-export const getComerciosAprobados = async () => {
-  try {
-    const comercios = await getAllComercios();
-    return comercios.filter(c => c.estado === true);
-  } catch (error) {
-    console.error('Error en getComerciosAprobados:', error);
-    throw error;
-  }
+export const calculateDistance = (lat1, lng1, lat2, lng2) => {
+  const R = 6371e3; // Radio de la Tierra en metros
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lng2 - lng1) * Math.PI / 180;
+
+  const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
 };
 
 /**
- * Obtiene comercios pendientes de aprobación
- * @returns {Promise<Array>} Lista de comercios pendientes
+ * Ordena comercios por distancia
+ * @param {Array} comercios - Lista de comercios
+ * @param {Object} userLocation - Ubicación del usuario { latitude, longitude }
+ * @returns {Array} Comercios ordenados por distancia
  */
-export const getComerciosPendientes = async () => {
-  try {
-    const comercios = await getAllComercios();
-    return comercios.filter(c => c.estado === false);
-  } catch (error) {
-    console.error('Error en getComerciosPendientes:', error);
-    throw error;
-  }
+export const sortComerciosByDistance = (comercios, userLocation) => {
+  if (!userLocation) return comercios;
+
+  return [...comercios].sort((a, b) => {
+    const distA = calculateDistance(
+      userLocation.latitude,
+      userLocation.longitude,
+      a.latitud,
+      a.longitud
+    );
+    const distB = calculateDistance(
+      userLocation.latitude,
+      userLocation.longitude,
+      b.latitud,
+      b.longitud
+    );
+    return distA - distB;
+  });
 };
 
 export default {
@@ -158,7 +184,8 @@ export default {
   createComercio,
   updateComercio,
   deleteComercio,
-  getComerciosByTipo,
-  getComerciosAprobados,
-  getComerciosPendientes,
+  filterApprovedComercios,
+  filterComerciosByType,
+  calculateDistance,
+  sortComerciosByDistance,
 };

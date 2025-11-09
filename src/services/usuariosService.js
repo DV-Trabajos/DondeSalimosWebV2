@@ -1,6 +1,6 @@
-// usuariosService.js - Servicio de gestión de usuarios
+// usuariosService.js - Servicio completo de usuarios
 
-import { apiGet, apiPost, apiPut, apiDelete } from './api';
+import { apiGet, apiPut, apiDelete } from './api';
 
 /**
  * Obtiene todos los usuarios
@@ -15,6 +15,11 @@ export const getAllUsuarios = async () => {
     throw error;
   }
 };
+
+/**
+ * Alias para getAllUsuarios (compatibilidad)
+ */
+export const getUsuarios = getAllUsuarios;
 
 /**
  * Obtiene un usuario por ID
@@ -32,22 +37,7 @@ export const getUsuarioById = async (id) => {
 };
 
 /**
- * Busca usuarios por nombre
- * @param {string} nombre - Nombre a buscar
- * @returns {Promise<Array>} Lista de usuarios
- */
-export const searchUsuariosByName = async (nombre) => {
-  try {
-    const response = await apiGet(`/api/usuarios/buscarNombreUsuario/${nombre}`);
-    return response;
-  } catch (error) {
-    console.error('Error en searchUsuariosByName:', error);
-    throw error;
-  }
-};
-
-/**
- * Busca un usuario por email
+ * Obtiene un usuario por email
  * @param {string} email - Email del usuario
  * @returns {Promise<Object>} Datos del usuario
  */
@@ -62,14 +52,34 @@ export const getUsuarioByEmail = async (email) => {
 };
 
 /**
+ * Busca usuarios por nombre
+ * @param {string} nombre - Nombre o parte del nombre
+ * @returns {Promise<Array>} Lista de usuarios encontrados
+ */
+export const searchUsuariosByName = async (nombre) => {
+  try {
+    const response = await apiGet(`/api/usuarios/buscarNombreUsuario/${nombre}`);
+    return response;
+  } catch (error) {
+    console.error('Error en searchUsuariosByName:', error);
+    throw error;
+  }
+};
+
+/**
  * Actualiza un usuario
  * @param {number} id - ID del usuario
- * @param {Object} usuarioData - Datos actualizados
- * @returns {Promise<Object>} Usuario actualizado
+ * @param {Object} usuario - Datos actualizados del usuario
+ * @param {string} usuario.nombreUsuario - Nombre de usuario
+ * @param {string} usuario.correo - Email
+ * @param {string} usuario.telefono - Teléfono (opcional)
+ * @param {boolean} usuario.estado - Estado activo/inactivo
+ * @param {number} usuario.iD_RolUsuario - ID del rol
+ * @returns {Promise<Object>} Respuesta de la actualización
  */
-export const updateUsuario = async (id, usuarioData) => {
+export const updateUsuario = async (id, usuario) => {
   try {
-    const response = await apiPut(`/api/usuarios/actualizar/${id}`, usuarioData);
+    const response = await apiPut(`/api/usuarios/actualizar/${id}`, usuario);
     return response;
   } catch (error) {
     console.error('Error en updateUsuario:', error);
@@ -78,13 +88,13 @@ export const updateUsuario = async (id, usuarioData) => {
 };
 
 /**
- * Desactiva un usuario
+ * Desactiva un usuario (cambia estado a false)
  * @param {number} id - ID del usuario
- * @returns {Promise<void>}
+ * @returns {Promise<Object>} Respuesta de la desactivación
  */
 export const desactivarUsuario = async (id) => {
   try {
-    const response = await apiPost(`/api/usuarios/desactivar/${id}`);
+    const response = await apiPut(`/api/usuarios/desactivar/${id}`);
     return response;
   } catch (error) {
     console.error('Error en desactivarUsuario:', error);
@@ -95,7 +105,7 @@ export const desactivarUsuario = async (id) => {
 /**
  * Elimina un usuario
  * @param {number} id - ID del usuario
- * @returns {Promise<void>}
+ * @returns {Promise<Object>} Respuesta de la eliminación
  */
 export const deleteUsuario = async (id) => {
   try {
@@ -108,73 +118,98 @@ export const deleteUsuario = async (id) => {
 };
 
 /**
- * Obtiene usuarios por rol
- * @param {number} rolId - ID del rol
- * @returns {Promise<Array>} Lista de usuarios con ese rol
+ * Filtra usuarios por rol
+ * @param {Array} usuarios - Lista de usuarios
+ * @param {number} rolId - ID del rol (1: Común, 2: Comercio, 3: Admin)
+ * @returns {Array} Usuarios filtrados
  */
-export const getUsuariosByRol = async (rolId) => {
-  try {
-    const usuarios = await getAllUsuarios();
-    return usuarios.filter(u => u.iD_RolUsuario === rolId);
-  } catch (error) {
-    console.error('Error en getUsuariosByRol:', error);
-    throw error;
-  }
+export const filterUsuariosByRole = (usuarios, rolId) => {
+  return usuarios.filter(u => u.iD_RolUsuario === rolId);
+};
+
+/**
+ * Filtra usuarios por estado
+ * @param {Array} usuarios - Lista de usuarios
+ * @param {boolean} estado - Estado a filtrar (true = activos, false = inactivos)
+ * @returns {Array} Usuarios filtrados
+ */
+export const filterUsuariosByEstado = (usuarios, estado) => {
+  return usuarios.filter(u => u.estado === estado);
 };
 
 /**
  * Obtiene usuarios activos
- * @returns {Promise<Array>} Lista de usuarios activos
+ * @param {Array} usuarios - Lista de usuarios
+ * @returns {Array} Usuarios activos
  */
-export const getUsuariosActivos = async () => {
-  try {
-    const usuarios = await getAllUsuarios();
-    return usuarios.filter(u => u.estado === true);
-  } catch (error) {
-    console.error('Error en getUsuariosActivos:', error);
-    throw error;
-  }
+export const getActiveUsuarios = (usuarios) => {
+  return filterUsuariosByEstado(usuarios, true);
 };
 
 /**
  * Obtiene usuarios inactivos
- * @returns {Promise<Array>} Lista de usuarios inactivos
+ * @param {Array} usuarios - Lista de usuarios
+ * @returns {Array} Usuarios inactivos
  */
-export const getUsuariosInactivos = async () => {
+export const getInactiveUsuarios = (usuarios) => {
+  return filterUsuariosByEstado(usuarios, false);
+};
+
+/**
+ * Cuenta usuarios por rol
+ * @param {Array} usuarios - Lista de usuarios
+ * @param {number} rolId - ID del rol
+ * @returns {number} Cantidad de usuarios con ese rol
+ */
+export const countUsuariosByRole = (usuarios, rolId) => {
+  return filterUsuariosByRole(usuarios, rolId).length;
+};
+
+/**
+ * Verifica si un email ya está en uso
+ * @param {string} email - Email a verificar
+ * @returns {Promise<boolean>} true si ya existe
+ */
+export const checkEmailExists = async (email) => {
   try {
-    const usuarios = await getAllUsuarios();
-    return usuarios.filter(u => u.estado === false);
+    await getUsuarioByEmail(email);
+    return true;
   } catch (error) {
-    console.error('Error en getUsuariosInactivos:', error);
+    if (error.response?.status === 404) {
+      return false;
+    }
     throw error;
   }
 };
 
 /**
- * Actualiza el perfil del usuario actual
- * @param {Object} profileData - Datos del perfil
- * @returns {Promise<Object>} Perfil actualizado
+ * Obtiene el nombre del rol
+ * @param {number} rolId - ID del rol
+ * @returns {string} Nombre del rol
  */
-export const updateProfile = async (userId, profileData) => {
-  try {
-    const response = await updateUsuario(userId, profileData);
-    return response;
-  } catch (error) {
-    console.error('Error en updateProfile:', error);
-    throw error;
-  }
+export const getRoleName = (rolId) => {
+  const roles = {
+    1: 'Usuario Común',
+    2: 'Usuario Comercio',
+    3: 'Administrador',
+  };
+  return roles[rolId] || 'Desconocido';
 };
 
 export default {
   getAllUsuarios,
+  getUsuarios,
   getUsuarioById,
-  searchUsuariosByName,
   getUsuarioByEmail,
+  searchUsuariosByName,
   updateUsuario,
   desactivarUsuario,
   deleteUsuario,
-  getUsuariosByRol,
-  getUsuariosActivos,
-  getUsuariosInactivos,
-  updateProfile,
+  filterUsuariosByRole,
+  filterUsuariosByEstado,
+  getActiveUsuarios,
+  getInactiveUsuarios,
+  countUsuariosByRole,
+  checkEmailExists,
+  getRoleName,
 };
