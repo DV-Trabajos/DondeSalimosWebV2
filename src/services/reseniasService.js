@@ -1,6 +1,6 @@
 // reseniasService.js - Servicio completo de reseñas
 
-import { apiGet, apiPost, apiDelete } from './api';
+import { apiGet, apiPost, apiPut, apiDelete } from './api';
 
 /**
  * Obtiene todas las reseñas
@@ -26,9 +26,9 @@ export const getResenias = getAllResenias;
  * @param {string} nombreComercio - Nombre del comercio
  * @returns {Promise<Array>} Lista de reseñas del comercio
  */
-export const getReseniasByComercio = async (nombreComercio) => {
+export const getReseniasByComercio = async (comercioId) => {
   try {
-    const response = await apiGet(`/api/resenias/buscarReseniasPorComercio/${nombreComercio}`);
+    const response = await apiGet(`/api/Resenias/buscarIdComercio/${comercioId}`);
     return response;
   } catch (error) {
     console.error('Error en getReseniasByComercio:', error);
@@ -45,9 +45,9 @@ export const getReseniasByComercio = async (nombreComercio) => {
  * @param {boolean} resenia.estado - Estado de la reseña (default: true)
  * @returns {Promise<Object>} Reseña creada
  */
-export const createResenia = async (resenia) => {
+export const createResenia = async (reseniaData) => {
   try {
-    const response = await apiPost('/api/resenias/crear', resenia);
+    const response = await apiPost('/api/Resenias/crear', reseniaData);
     return response;
   } catch (error) {
     console.error('Error en createResenia:', error);

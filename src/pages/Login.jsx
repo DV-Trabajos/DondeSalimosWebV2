@@ -90,24 +90,24 @@ const Login = () => {
 
         {/* Card principal */}
         <div className="bg-white rounded-2xl shadow-2xl p-8">
-          {/* Tabs Login/Registro */}
+          {/* Tabs Login/Registro - CORREGIDO */}
           <div className="flex gap-2 mb-6">
             <button
-              onClick={() => !isRegistering && toggleMode()}
+              onClick={() => setIsRegistering(false)}
               className={`flex-1 py-3 px-4 rounded-lg font-semibold transition ${
                 !isRegistering
-                  ? 'bg-primary text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-gray-200 text-gray-700'  // ACTIVO = GRIS
+                  : 'bg-primary text-white hover:bg-purple-700'  // INACTIVO = VIOLETA
               }`}
             >
               Iniciar Sesión
             </button>
             <button
-              onClick={() => isRegistering && toggleMode()}
+              onClick={() => setIsRegistering(true)}
               className={`flex-1 py-3 px-4 rounded-lg font-semibold transition ${
                 isRegistering
-                  ? 'bg-primary text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-gray-200 text-gray-700'  // ACTIVO = GRIS
+                  : 'bg-primary text-white hover:bg-purple-700'  // INACTIVO = VIOLETA
               }`}
             >
               Registrarse

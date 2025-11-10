@@ -1,4 +1,4 @@
-// Home.jsx - Página principal COMPLETA con mapa y búsqueda
+// Home.jsx - Página principal COMPLETA con mapa, búsqueda, filtros y todas las funcionalidades
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -9,6 +9,8 @@ import SearchBar from '../components/Home/SearchBar';
 import GoogleMapView from '../components/Home/GoogleMapView';
 import PlaceList from '../components/Home/PlaceList';
 import PlaceDetailModal from '../components/Home/PlaceDetailModal';
+import BarStories from '../components/Home/BarStories';
+import ReservaModal from '../components/Reservations/ReservaModal';
 import {
   getAllComercios,
   searchComerciosByName,
@@ -16,10 +18,10 @@ import {
   filterComerciosByType,
   sortComerciosByDistance,
 } from '../services/comerciosService';
-import ReservaModal from '../components/Reservations/ReservaModal';
-import { MapPin, List, Loader, AlertCircle } from 'lucide-react';
+import { MapPin, List, Loader, AlertCircle, Filter } from 'lucide-react';
 
 const Home = () => {
+  // Estados principales
   const [places, setPlaces] = useState([]);
   const [filteredPlaces, setFilteredPlaces] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,8 +29,15 @@ const Home = () => {
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState('map'); // 'map' o 'list'
+  
+  // Estados para reservas
   const [showReservaModal, setShowReservaModal] = useState(false);
   const [selectedComercioForReserva, setSelectedComercioForReserva] = useState(null);
+  
+  // Estados para filtros
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   
   const { isAuthenticated } = useAuth();
   const { 
@@ -39,17 +48,25 @@ const Home = () => {
   } = useLocation();
   const navigate = useNavigate();
 
+  // Categorías para el filtro
+  const categories = [
+    { id: 'all', label: 'Todos', icon: '🏪' },
+    { id: '1', label: 'Bares', icon: '🍺' },
+    { id: '2', label: 'Restaurantes', icon: '🍽️' },
+    { id: '3', label: 'Cafés', icon: '☕' },
+    { id: '4', label: 'Discotecas', icon: '🎉' },
+    { id: '5', label: 'Pubs', icon: '🍻' },
+  ];
+
   // Cargar comercios al montar
   useEffect(() => {
     loadPlaces();
   }, []);
 
-  // Aplicar ordenamiento cuando cambia la ubicación
+  // Aplicar filtros cuando cambian los parámetros
   useEffect(() => {
-    if (location && places.length > 0) {
-      applyFiltersAndSort('', { type: 'all', sortBy: 'distance' });
-    }
-  }, [location]);
+    applyFilters();
+  }, [places, selectedCategory, searchTerm, location]);
 
   const loadPlaces = async () => {
     try {
@@ -60,7 +77,6 @@ const Home = () => {
       // Filtrar solo comercios aprobados
       const aprobados = filterApprovedComercios(comercios);
       setPlaces(aprobados);
-      setFilteredPlaces(aprobados);
     } catch (err) {
       console.error('Error cargando lugares:', err);
       setError('Error al cargar los lugares. Por favor, intenta nuevamente.');
@@ -69,90 +85,38 @@ const Home = () => {
     }
   };
 
-  const applyFiltersAndSort = (searchTerm, filters) => {
-    let results = [...places];
+  const applyFilters = () => {
+    let filtered = [...places];
 
-    // Filtrar por término de búsqueda
-    if (searchTerm) {
+    // Filtrar por categoría
+    if (selectedCategory !== 'all') {
+      filtered = filterComerciosByType(filtered, parseInt(selectedCategory));
+    }
+
+    // Filtrar por búsqueda
+    if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
-      results = results.filter(place =>
-        place.nombre.toLowerCase().includes(term) ||
-        place.direccion.toLowerCase().includes(term) ||
-        place.ciudad?.toLowerCase().includes(term)
+      filtered = filtered.filter(c => 
+        c.nombre.toLowerCase().includes(term) ||
+        c.direccion.toLowerCase().includes(term)
       );
     }
 
-    // Filtrar por tipo
-    results = filterComerciosByType(results, filters.type);
-
-    // Ordenar
-    switch (filters.sortBy) {
-      case 'rating':
-        results.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
-      case 'distance':
-        if (location) {
-          results = sortComerciosByDistance(results, location);
-        }
-        break;
-      case 'name':
-      default:
-        results.sort((a, b) => a.nombre.localeCompare(b.nombre));
-        break;
+    // Ordenar por distancia si hay ubicación
+    if (location) {
+      filtered = sortComerciosByDistance(filtered, location);
     }
 
-    setFilteredPlaces(results);
+    setFilteredPlaces(filtered);
   };
 
-  const handleSearch = async (searchTerm, filters) => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  const handleSearch = (term) => {
+    setSearchTerm(term);
+  };
 
-      let results;
-      
-      if (searchTerm) {
-        // Buscar por nombre en el backend
-        try {
-          results = await searchComerciosByName(searchTerm);
-          results = filterApprovedComercios(results);
-        } catch (err) {
-          // Si falla la búsqueda, usar filtrado local
-          results = places.filter(p => 
-            p.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-          );
-        }
-      } else {
-        // Usar todos los lugares
-        results = [...places];
-      }
-
-      // Aplicar filtros y ordenamiento localmente
-      let filtered = filterComerciosByType(results, filters.type);
-
-      // Ordenar
-      switch (filters.sortBy) {
-        case 'rating':
-          filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-          break;
-        case 'distance':
-          if (location) {
-            filtered = sortComerciosByDistance(filtered, location);
-          }
-          break;
-        case 'name':
-        default:
-          filtered.sort((a, b) => a.nombre.localeCompare(b.nombre));
-          break;
-      }
-
-      setFilteredPlaces(filtered);
-    } catch (err) {
-      console.error('Error en búsqueda:', err);
-      setError('Error al buscar lugares');
-    } finally {
-      setIsLoading(false);
-    }
+  const handleCategoryChange = (categoryId) => {
+    setSelectedCategory(categoryId);
+    setShowFilters(false); // Cerrar el menú de filtros después de seleccionar
   };
 
   const handlePlaceClick = (place) => {
@@ -161,44 +125,57 @@ const Home = () => {
   };
 
   const handleCloseModal = () => {
-    setSelectedPlace(null);
     setIsModalOpen(false);
+    setSelectedPlace(null);
   };
 
   const handleReserve = (place) => {
     if (!isAuthenticated) {
-      navigate('/login', { state: { from: '/' } });
+      alert('Debes iniciar sesión para hacer una reserva');
+      navigate('/login');
       return;
     }
+    
     setSelectedComercioForReserva(place);
     setShowReservaModal(true);
   };
 
   const handleReview = (place) => {
-    if (!isAuthenticated) {
-      navigate('/login', { state: { from: '/' } });
-      return;
+    // Esta función se maneja dentro de PlaceDetailModal
+    console.log('Review:', place);
+  };
+
+  const handleStoryPress = (comercio) => {
+    // Buscar el comercio completo en la lista
+    const comercioCompleto = places.find(p => p.iD_Comercio === comercio.iD_Comercio);
+    
+    if (comercioCompleto) {
+      setSelectedPlace(comercioCompleto);
+      setIsModalOpen(true);
+      setViewMode('map'); // Cambiar a vista de mapa
     }
-    // Abrir modal de reseña (se implementará en Fase 4)
-    console.log('Dejar reseña en:', place);
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="max-w-7xl mx-auto px-4 py-6">
-        {/* Info de ubicación */}
-        <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800 mb-1">
-                Descubre lugares cerca de ti
-              </h1>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-primary" />
+      <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        {/* Info de ubicación y controles */}
+        <div className="mb-6">
+          {/* Barra de ubicación */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start gap-3">
+              <MapPin className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-blue-900 mb-1">
+                  Tu Ubicación
+                </h3>
                 {locationLoading ? (
-                  <p className="text-gray-600 text-sm">Obteniendo ubicación...</p>
+                  <div className="flex items-center gap-2 text-blue-700">
+                    <Loader className="w-4 h-4 animate-spin" />
+                    <span className="text-sm">Obteniendo ubicación...</span>
+                  </div>
                 ) : locationError ? (
                   <div className="text-red-600 text-sm">
                     <p>{locationError}</p>
@@ -210,44 +187,93 @@ const Home = () => {
                     </button>
                   </div>
                 ) : location ? (
-                  <p className="text-gray-600 text-sm">
-                    Ubicación detectada: {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
+                  <p className="text-blue-700 text-sm">
+                    Lat: {location.latitude.toFixed(6)}, Lng: {location.longitude.toFixed(6)}
                   </p>
                 ) : (
-                  <button
-                    onClick={requestLocation}
-                    className="text-blue-600 hover:underline text-sm"
-                  >
-                    Activar ubicación
-                  </button>
+                  <p className="text-gray-600 text-sm">No disponible</p>
                 )}
               </div>
             </div>
+          </div>
 
-            {/* Toggle vista */}
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('map')}
-                className={`px-4 py-2 rounded-md transition flex items-center gap-2 ${
-                  viewMode === 'map'
-                    ? 'bg-white text-primary shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                <MapPin className="w-4 h-4" />
-                <span className="hidden sm:inline">Mapa</span>
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-4 py-2 rounded-md transition flex items-center gap-2 ${
-                  viewMode === 'list'
-                    ? 'bg-white text-primary shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                <List className="w-4 h-4" />
-                <span className="hidden sm:inline">Lista</span>
-              </button>
+          {/* Título y controles */}
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-800">
+              Descubre lugares
+            </h1>
+            <div className="flex gap-2">
+              {/* Toggle Mapa/Lista */}
+              <div className="flex gap-1 bg-white rounded-lg p-1 shadow-sm">
+                <button
+                  onClick={() => setViewMode('map')}
+                  className={`px-4 py-2 rounded-md transition flex items-center gap-2 ${
+                    viewMode === 'map'
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  <MapPin className="w-4 h-4" />
+                  <span className="hidden sm:inline">Mapa</span>
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`px-4 py-2 rounded-md transition flex items-center gap-2 ${
+                    viewMode === 'list'
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  <List className="w-4 h-4" />
+                  <span className="hidden sm:inline">Lista</span>
+                </button>
+              </div>
+
+              {/* Botón de filtros */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`px-4 py-2 rounded-lg transition flex items-center gap-2 shadow-sm ${
+                    selectedCategory !== 'all'
+                      ? 'bg-primary text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Filter className="w-4 h-4" />
+                  <span className="hidden sm:inline">Filtros</span>
+                  {selectedCategory !== 'all' && (
+                    <span className="hidden sm:inline text-xs">(1)</span>
+                  )}
+                </button>
+
+                {/* Menú desplegable de filtros */}
+                {showFilters && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 z-50 py-2">
+                    <div className="px-3 py-2 border-b border-gray-200">
+                      <p className="text-xs font-semibold text-gray-600 uppercase">
+                        Categorías
+                      </p>
+                    </div>
+                    {categories.map(cat => (
+                      <button
+                        key={cat.id}
+                        onClick={() => handleCategoryChange(cat.id)}
+                        className={`w-full px-4 py-2 text-left hover:bg-gray-50 transition flex items-center gap-3 ${
+                          selectedCategory === cat.id
+                            ? 'bg-purple-50 text-primary font-semibold'
+                            : 'text-gray-700'
+                        }`}
+                      >
+                        <span className="text-xl">{cat.icon}</span>
+                        <span>{cat.label}</span>
+                        {selectedCategory === cat.id && (
+                          <span className="ml-auto text-primary">✓</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -279,13 +305,18 @@ const Home = () => {
             </div>
           </div>
         ) : viewMode === 'map' ? (
-          <GoogleMapView
-            places={filteredPlaces}
-            userLocation={location}
-            selectedPlace={selectedPlace}
-            onPlaceClick={handlePlaceClick}
-            onMapClick={() => setSelectedPlace(null)}
-          />
+          <div className="relative">
+            <GoogleMapView
+              places={filteredPlaces}
+              userLocation={location}
+              selectedPlace={selectedPlace}
+              onPlaceClick={handlePlaceClick}
+              onMapClick={() => setSelectedPlace(null)}
+            />
+
+            {/* BarStories sobre el mapa - SIN CategoryFilter */}
+            <BarStories onStoryPress={handleStoryPress} />
+          </div>
         ) : (
           <PlaceList
             places={filteredPlaces}
@@ -301,6 +332,16 @@ const Home = () => {
             <p>
               Mostrando <strong>{filteredPlaces.length}</strong> de{' '}
               <strong>{places.length}</strong> lugares
+              {selectedCategory !== 'all' && (
+                <span className="ml-2 text-primary font-semibold">
+                  (Filtrado por categoría)
+                </span>
+              )}
+              {searchTerm && (
+                <span className="ml-2 text-primary font-semibold">
+                  (Búsqueda: "{searchTerm}")
+                </span>
+              )}
             </p>
           </div>
         )}
@@ -315,7 +356,7 @@ const Home = () => {
         onReview={handleReview}
       />
 
-      // En el JSX (antes del cierre del componente)
+      {/* Modal de reserva */}
       <ReservaModal
         isOpen={showReservaModal}
         onClose={() => {
@@ -324,6 +365,8 @@ const Home = () => {
         }}
         comercio={selectedComercioForReserva}
         onSuccess={() => {
+          setShowReservaModal(false);
+          setSelectedComercioForReserva(null);
           navigate('/reservas');
         }}
       />

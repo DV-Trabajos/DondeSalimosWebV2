@@ -123,8 +123,7 @@ export const filterApprovedComercios = (comercios) => {
  * @returns {Array} Comercios filtrados
  */
 export const filterComerciosByType = (comercios, tipoId) => {
-  if (!tipoId || tipoId === 'all') return comercios;
-  return comercios.filter(c => c.iD_TipoComercio === parseInt(tipoId));
+  return comercios.filter(c => c.iD_TipoComercio === tipoId);
 };
 
 /**
@@ -135,18 +134,17 @@ export const filterComerciosByType = (comercios, tipoId) => {
  * @param {number} lng2 - Longitud punto 2
  * @returns {number} Distancia en metros
  */
-export const calculateDistance = (lat1, lng1, lat2, lng2) => {
-  const R = 6371e3; // Radio de la Tierra en metros
-  const φ1 = lat1 * Math.PI / 180;
-  const φ2 = lat2 * Math.PI / 180;
-  const Δφ = (lat2 - lat1) * Math.PI / 180;
-  const Δλ = (lng2 - lng1) * Math.PI / 180;
-
-  const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-            Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371; // Radio de la Tierra en km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
   return R * c;
 };
 
@@ -158,19 +156,19 @@ export const calculateDistance = (lat1, lng1, lat2, lng2) => {
  */
 export const sortComerciosByDistance = (comercios, userLocation) => {
   if (!userLocation) return comercios;
-
-  return [...comercios].sort((a, b) => {
+  
+  return comercios.sort((a, b) => {
     const distA = calculateDistance(
       userLocation.latitude,
       userLocation.longitude,
-      a.latitud,
-      a.longitud
+      a.latitud || 0,
+      a.longitud || 0
     );
     const distB = calculateDistance(
       userLocation.latitude,
       userLocation.longitude,
-      b.latitud,
-      b.longitud
+      b.latitud || 0,
+      b.longitud || 0
     );
     return distA - distB;
   });
