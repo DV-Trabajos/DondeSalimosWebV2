@@ -1,4 +1,4 @@
-// comerciosService.js - Servicio completo de comercios
+// comerciosService.js - Servicio completo de comercios CON GEOCODING
 
 import { apiGet, apiPost, apiPut, apiDelete } from './api';
 
@@ -127,12 +127,12 @@ export const filterComerciosByType = (comercios, tipoId) => {
 };
 
 /**
- * Calcula la distancia entre dos puntos (en metros)
+ * Calcula la distancia entre dos puntos (en km)
  * @param {number} lat1 - Latitud punto 1
- * @param {number} lng1 - Longitud punto 1
+ * @param {number} lon1 - Longitud punto 1
  * @param {number} lat2 - Latitud punto 2
- * @param {number} lng2 - Longitud punto 2
- * @returns {number} Distancia en metros
+ * @param {number} lon2 - Longitud punto 2
+ * @returns {number} Distancia en km
  */
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371; // Radio de la Tierra en km
@@ -174,6 +174,74 @@ export const sortComerciosByDistance = (comercios, userLocation) => {
   });
 };
 
+/**
+ * 🆕 GEOCODING: Convierte una dirección en coordenadas (lat, lng)
+ * @param {string} address - Dirección completa (ej: "Av. Corrientes 1234, Buenos Aires")
+ * @returns {Promise<{lat: number, lng: number}>} Coordenadas
+ */
+export const geocodeAddress = async (address) => {
+  try {
+    // Obtener API KEY desde las variables de entorno
+    const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    
+    if (!GOOGLE_MAPS_API_KEY) {
+      console.error('❌ Google Maps API Key no configurada');
+      throw new Error('API Key no configurada');
+    }
+
+    // Codificar la dirección para URL
+    const encodedAddress = encodeURIComponent(address);
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${GOOGLE_MAPS_API_KEY}`;
+
+    console.log('🗺️ Geocodificando dirección:', address);
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status === 'OK' && data.results.length > 0) {
+      const location = data.results[0].geometry.location;
+      console.log(`✅ Coordenadas obtenidas: ${location.lat}, ${location.lng}`);
+      
+      return {
+        lat: location.lat,
+        lng: location.lng,
+        formatted_address: data.results[0].formatted_address,
+      };
+    } else if (data.status === 'ZERO_RESULTS') {
+      console.warn(`⚠️ No se encontraron resultados para: "${address}"`);
+      throw new Error('No se encontró la dirección. Verifica que esté correcta.');
+    } else if (data.status === 'REQUEST_DENIED') {
+      console.error('❌ API Key inválida o sin permisos');
+      throw new Error('Error de API Key. Contacta al administrador.');
+    } else {
+      console.warn(`❌ Geocoding falló - Status: ${data.status}`);
+      throw new Error(`Error al geocodificar: ${data.status}`);
+    }
+  } catch (error) {
+    console.error('❌ Error en geocoding:', error);
+    throw error;
+  }
+};
+
+/**
+ * 🆕 Valida si las coordenadas están dentro de un rango válido
+ * @param {number} lat - Latitud
+ * @param {number} lng - Longitud
+ * @returns {boolean} True si las coordenadas son válidas
+ */
+export const validateCoordinates = (lat, lng) => {
+  return (
+    typeof lat === 'number' &&
+    typeof lng === 'number' &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180 &&
+    !isNaN(lat) &&
+    !isNaN(lng)
+  );
+};
+
 export default {
   getAllComercios,
   getComercioById,
@@ -186,4 +254,6 @@ export default {
   filterComerciosByType,
   calculateDistance,
   sortComerciosByDistance,
+  geocodeAddress,
+  validateCoordinates,
 };
