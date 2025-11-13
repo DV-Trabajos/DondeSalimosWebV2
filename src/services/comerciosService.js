@@ -1,6 +1,11 @@
-// comerciosService.js - Servicio completo de comercios CON GEOCODING
+// src/services/comerciosService.js
+// Servicio completo de comercios CON GEOCODING
 
 import { apiGet, apiPost, apiPut, apiDelete } from './api';
+
+// ============================================
+// COMERCIOS - CRUD BÁSICO
+// ============================================
 
 /**
  * Obtiene todos los comercios
@@ -107,6 +112,10 @@ export const deleteComercio = async (id) => {
   }
 };
 
+// ============================================
+// FILTROS Y UTILIDADES
+// ============================================
+
 /**
  * Filtra comercios aprobados
  * @param {Array} comercios - Lista de comercios
@@ -123,98 +132,83 @@ export const filterApprovedComercios = (comercios) => {
  * @returns {Array} Comercios filtrados
  */
 export const filterComerciosByType = (comercios, tipoId) => {
-  return comercios.filter(c => c.iD_TipoComercio === tipoId);
+  if (!tipoId || tipoId === 'all') return comercios;
+  return comercios.filter(c => c.iD_TipoComercio === parseInt(tipoId));
 };
 
 /**
- * Calcula la distancia entre dos puntos (en km)
+ * Calcula distancia entre dos puntos (Haversine)
  * @param {number} lat1 - Latitud punto 1
  * @param {number} lon1 - Longitud punto 1
  * @param {number} lat2 - Latitud punto 2
  * @param {number} lon2 - Longitud punto 2
- * @returns {number} Distancia en km
+ * @returns {number} Distancia en kilómetros
  */
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
+export const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371; // Radio de la Tierra en km
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) *
-      Math.cos(lat2 * (Math.PI / 180)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const distance = R * c;
+  
+  return distance;
 };
 
 /**
- * Ordena comercios por distancia
+ * Ordena comercios por distancia a un punto
  * @param {Array} comercios - Lista de comercios
- * @param {Object} userLocation - Ubicación del usuario { latitude, longitude }
+ * @param {number} userLat - Latitud del usuario
+ * @param {number} userLng - Longitud del usuario
  * @returns {Array} Comercios ordenados por distancia
  */
-export const sortComerciosByDistance = (comercios, userLocation) => {
-  if (!userLocation) return comercios;
+export const sortComerciosByDistance = (comercios, userLat, userLng) => {
+  if (!userLat || !userLng) return comercios;
   
-  return comercios.sort((a, b) => {
-    const distA = calculateDistance(
-      userLocation.latitude,
-      userLocation.longitude,
-      a.latitud || 0,
-      a.longitud || 0
-    );
-    const distB = calculateDistance(
-      userLocation.latitude,
-      userLocation.longitude,
-      b.latitud || 0,
-      b.longitud || 0
-    );
-    return distA - distB;
-  });
+  return comercios
+    .map(comercio => ({
+      ...comercio,
+      distance: comercio.latitud && comercio.longitud
+        ? calculateDistance(userLat, userLng, comercio.latitud, comercio.longitud)
+        : Infinity
+    }))
+    .sort((a, b) => a.distance - b.distance);
 };
 
 /**
- * 🆕 GEOCODING: Convierte una dirección en coordenadas (lat, lng)
- * @param {string} address - Dirección completa (ej: "Av. Corrientes 1234, Buenos Aires")
- * @returns {Promise<{lat: number, lng: number}>} Coordenadas
+ * Geocodifica una dirección usando Google Geocoding API
+ * @param {string} address - Dirección a geocodificar
+ * @returns {Promise<Object>} Objeto con lat y lng
  */
 export const geocodeAddress = async (address) => {
+  const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  
+  if (!address || !GOOGLE_MAPS_API_KEY) {
+    throw new Error('Dirección o API Key faltante');
+  }
+
   try {
-    // Obtener API KEY desde las variables de entorno
-    const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}`;
     
-    if (!GOOGLE_MAPS_API_KEY) {
-      console.error('❌ Google Maps API Key no configurada');
-      throw new Error('API Key no configurada');
-    }
-
-    // Codificar la dirección para URL
-    const encodedAddress = encodeURIComponent(address);
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${GOOGLE_MAPS_API_KEY}`;
-
-    console.log('🗺️ Geocodificando dirección:', address);
-
     const response = await fetch(url);
     const data = await response.json();
 
     if (data.status === 'OK' && data.results.length > 0) {
       const location = data.results[0].geometry.location;
-      console.log(`✅ Coordenadas obtenidas: ${location.lat}, ${location.lng}`);
-      
       return {
         lat: location.lat,
-        lng: location.lng,
-        formatted_address: data.results[0].formatted_address,
+        lng: location.lng
       };
     } else if (data.status === 'ZERO_RESULTS') {
-      console.warn(`⚠️ No se encontraron resultados para: "${address}"`);
-      throw new Error('No se encontró la dirección. Verifica que esté correcta.');
+      throw new Error('No se encontraron resultados para esta dirección.');
     } else if (data.status === 'REQUEST_DENIED') {
-      console.error('❌ API Key inválida o sin permisos');
       throw new Error('Error de API Key. Contacta al administrador.');
     } else {
-      console.warn(`❌ Geocoding falló - Status: ${data.status}`);
       throw new Error(`Error al geocodificar: ${data.status}`);
     }
   } catch (error) {
@@ -224,7 +218,7 @@ export const geocodeAddress = async (address) => {
 };
 
 /**
- * 🆕 Valida si las coordenadas están dentro de un rango válido
+ * Valida si las coordenadas están dentro de un rango válido
  * @param {number} lat - Latitud
  * @param {number} lng - Longitud
  * @returns {boolean} True si las coordenadas son válidas
@@ -242,6 +236,7 @@ export const validateCoordinates = (lat, lng) => {
   );
 };
 
+// Export default para compatibilidad
 export default {
   getAllComercios,
   getComercioById,

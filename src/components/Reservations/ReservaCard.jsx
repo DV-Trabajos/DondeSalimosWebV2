@@ -1,120 +1,121 @@
-// ReservaCard.jsx - Tarjeta individual de reserva
-
-import { Calendar, Clock, Users, MapPin, AlertCircle, CheckCircle, XCircle, Trash2 } from 'lucide-react';
-import { formatDate, formatTime } from '../../utils/formatters';
+// src/components/Reservations/ReservaCard.jsx
+import { Calendar, Users, MapPin, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { format, isPast, isToday, isTomorrow } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 /**
  * Componente de tarjeta de reserva
- * @param {Object} props
- * @param {Object} props.reserva - Datos de la reserva
- * @param {Function} props.onCancel - Callback para cancelar
- * @param {Function} props.onApprove - Callback para aprobar (solo comercios)
- * @param {Function} props.onReject - Callback para rechazar (solo comercios)
- * @param {boolean} props.isOwner - Si es el dueño del comercio
+ * Muestra diferente información dependiendo si es el usuario o el dueño del comercio
  */
-const ReservaCard = ({ reserva, onCancel, onApprove, onReject, isOwner = false }) => {
-  const isPending = reserva.estado === false && !reserva.motivoRechazo;
-  const isApproved = reserva.estado === true;
-  const isRejected = reserva.estado === false && reserva.motivoRechazo;
+const ReservaCard = ({ 
+  reserva, 
+  isOwner = false, 
+  comercioNombre = null,
+  onAprobar = null,
+  onRechazar = null,
+  onCancelar = null 
+}) => {
+  
+  // Determinar el estado de la reserva
+  const isPending = !reserva.aprobada && reserva.estado;
+  const isApproved = reserva.aprobada && reserva.estado;
+  const isRejected = !reserva.estado;
+  const isPastReservation = isPast(new Date(reserva.fechaReserva));
 
-  const fechaReserva = new Date(reserva.fechaReserva);
-  const isFuture = fechaReserva > new Date();
+  // Formatear fecha
+  const formatearFecha = (fecha) => {
+    try {
+      const fechaObj = new Date(fecha);
+      
+      if (isToday(fechaObj)) {
+        return `Hoy a las ${format(fechaObj, 'HH:mm')}`;
+      }
+      if (isTomorrow(fechaObj)) {
+        return `Mañana a las ${format(fechaObj, 'HH:mm')}`;
+      }
+      return format(fechaObj, "d 'de' MMMM, yyyy 'a las' HH:mm", { locale: es });
+    } catch (error) {
+      return 'Fecha no disponible';
+    }
+  };
 
-  // Determinar el estado visual
-  const getStatusBadge = () => {
-    if (isRejected) {
-      return (
-        <div className="flex items-center gap-2 px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-semibold">
-          <XCircle className="w-4 h-4" />
-          Rechazada
-        </div>
-      );
+  // Determinar el color del badge según el estado
+  const getBadgeClasses = () => {
+    if (isPending) {
+      return 'bg-yellow-100 text-yellow-800 border-yellow-300';
     }
     if (isApproved) {
-      return (
-        <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
-          <CheckCircle className="w-4 h-4" />
-          Confirmada
-        </div>
-      );
+      return 'bg-green-100 text-green-800 border-green-300';
     }
-    return (
-      <div className="flex items-center gap-2 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-semibold">
-        <AlertCircle className="w-4 h-4" />
-        Pendiente
-      </div>
-    );
+    if (isRejected) {
+      return 'bg-red-100 text-red-800 border-red-300';
+    }
+    return 'bg-gray-100 text-gray-800 border-gray-300';
+  };
+
+  const getEstadoTexto = () => {
+    if (isPending) return 'Pendiente';
+    if (isApproved) return 'Aprobada';
+    if (isRejected) return 'Rechazada';
+    return 'Desconocido';
+  };
+
+  const getIconoEstado = () => {
+    if (isPending) return <Clock className="w-4 h-4" />;
+    if (isApproved) return <CheckCircle className="w-4 h-4" />;
+    if (isRejected) return <XCircle className="w-4 h-4" />;
+    return <AlertCircle className="w-4 h-4" />;
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-md border-2 transition-all hover:shadow-lg ${
-      isPending ? 'border-yellow-300' :
-      isApproved ? 'border-green-300' :
-      'border-red-300'
+    <div className={`bg-white border-2 rounded-lg shadow-md overflow-hidden transition-all hover:shadow-lg ${
+      isPending ? 'border-yellow-300' : 
+      isApproved ? 'border-green-300' : 
+      isRejected ? 'border-red-300' : 
+      'border-gray-200'
     }`}>
-      <div className="p-6">
-        {/* Header con estado */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <h3 className="text-lg font-bold text-gray-800 mb-1">
-              {reserva.comercio?.nombre || 'Comercio'}
-            </h3>
-            <p className="text-gray-600 text-sm flex items-center gap-1">
-              <MapPin className="w-4 h-4" />
-              {reserva.comercio?.direccion || 'Sin dirección'}
-            </p>
+      {/* Header con estado */}
+      <div className={`px-4 py-3 border-b ${
+        isPending ? 'bg-yellow-50 border-yellow-200' : 
+        isApproved ? 'bg-green-50 border-green-200' : 
+        isRejected ? 'bg-red-50 border-red-200' : 
+        'bg-gray-50 border-gray-200'
+      }`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {getIconoEstado()}
+            <span className="font-semibold text-gray-900">
+              {isOwner && reserva.usuario?.nombreUsuario 
+                ? reserva.usuario.nombreUsuario 
+                : comercioNombre || reserva.comercio?.nombre || 'Comercio'}
+            </span>
           </div>
-          {getStatusBadge()}
+          <span className={`text-xs font-semibold px-3 py-1 rounded-full border ${getBadgeClasses()}`}>
+            {getEstadoTexto()}
+          </span>
         </div>
+      </div>
 
-        {/* Información de la reserva */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-          <div className="flex items-center gap-2 text-gray-700">
-            <Calendar className="w-5 h-5 text-primary" />
+      {/* Contenido */}
+      <div className="p-4 space-y-3">
+        {/* Nombre del comercio (solo para usuarios) */}
+        {!isOwner && (
+          <div className="flex items-start gap-3">
+            <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs text-gray-500">Fecha</p>
-              <p className="font-semibold">{formatDate(fechaReserva)}</p>
+              <p className="text-sm text-gray-600">Lugar</p>
+              <p className="font-semibold text-gray-900">
+                {comercioNombre || reserva.comercio?.nombre || 'Comercio'}
+              </p>
             </div>
-          </div>
-          
-          <div className="flex items-center gap-2 text-gray-700">
-            <Clock className="w-5 h-5 text-primary" />
-            <div>
-              <p className="text-xs text-gray-500">Hora</p>
-              <p className="font-semibold">{formatTime(fechaReserva)}</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2 text-gray-700">
-            <Users className="w-5 h-5 text-primary" />
-            <div>
-              <p className="text-xs text-gray-500">Personas</p>
-              <p className="font-semibold">{reserva.comenzales || reserva.cantidadPersonas}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Comentarios */}
-        {reserva.comentarios && (
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-500 mb-1">Comentarios:</p>
-            <p className="text-sm text-gray-700">{reserva.comentarios}</p>
           </div>
         )}
 
-        {/* Motivo de rechazo */}
-        {isRejected && reserva.motivoRechazo && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-xs text-red-600 mb-1 font-semibold">Motivo del rechazo:</p>
-            <p className="text-sm text-red-700">{reserva.motivoRechazo}</p>
-          </div>
-        )}
-
-        {/* Usuario (solo para comercios) */}
+        {/* Información de contacto del usuario (solo para comercios) */}
         {isOwner && reserva.usuario && (
-          <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-            <p className="text-xs text-blue-600 mb-1">Cliente:</p>
-            <p className="text-sm text-blue-800 font-semibold">
+          <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+            <p className="text-xs text-blue-600 font-semibold mb-1">Cliente</p>
+            <p className="text-sm text-blue-900 font-semibold">
               {reserva.usuario.nombreUsuario}
             </p>
             {reserva.usuario.telefono && (
@@ -122,57 +123,88 @@ const ReservaCard = ({ reserva, onCancel, onApprove, onReject, isOwner = false }
                 Tel: {reserva.usuario.telefono}
               </p>
             )}
+            {reserva.usuario.correo && (
+              <p className="text-xs text-blue-600 truncate">
+                {reserva.usuario.correo}
+              </p>
+            )}
           </div>
         )}
 
-        {/* Acciones */}
-        <div className="flex flex-wrap gap-2 pt-4 border-t">
-          {/* Acciones para usuario común */}
-          {!isOwner && isPending && isFuture && (
-            <button
-              onClick={() => onCancel && onCancel(reserva)}
-              className="flex-1 sm:flex-none px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition flex items-center justify-center gap-2 font-semibold"
-            >
-              <Trash2 className="w-4 h-4" />
-              Cancelar
-            </button>
-          )}
-
-          {/* Acciones para dueño del comercio */}
-          {isOwner && isPending && (
-            <>
-              <button
-                onClick={() => onApprove && onApprove(reserva)}
-                className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center justify-center gap-2 font-semibold"
-              >
-                <CheckCircle className="w-4 h-4" />
-                Aprobar
-              </button>
-              <button
-                onClick={() => onReject && onReject(reserva)}
-                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition flex items-center justify-center gap-2 font-semibold"
-              >
-                <XCircle className="w-4 h-4" />
-                Rechazar
-              </button>
-            </>
-          )}
-
-          {/* Mensaje si no hay acciones disponibles */}
-          {!isPending && !isOwner && (
-            <p className="text-sm text-gray-500 italic">
-              {isApproved ? 'Reserva confirmada por el comercio' : 'Esta reserva ya no está activa'}
+        {/* Fecha y hora */}
+        <div className="flex items-start gap-3">
+          <Calendar className="w-5 h-5 text-gray-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm text-gray-600">Fecha y hora</p>
+            <p className="font-semibold text-gray-900">
+              {formatearFecha(reserva.fechaReserva)}
             </p>
-          )}
+            {isPastReservation && (
+              <span className="text-xs text-gray-500 italic">(Pasada)</span>
+            )}
+          </div>
         </div>
 
-        {/* Indicador de fecha pasada */}
-        {!isFuture && (
-          <div className="mt-3 text-center text-xs text-gray-500 italic">
-            Esta reserva ya pasó
+        {/* Cantidad de personas */}
+        <div className="flex items-start gap-3">
+          <Users className="w-5 h-5 text-gray-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm text-gray-600">Personas</p>
+            <p className="font-semibold text-gray-900">
+              {reserva.cantidadPersonas || reserva.comenzales || 1}
+            </p>
+          </div>
+        </div>
+
+        {/* Comentarios */}
+        {reserva.comentarios && (
+          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+            <p className="text-xs text-gray-500 mb-1">Comentarios:</p>
+            <p className="text-sm text-gray-700">{reserva.comentarios}</p>
+          </div>
+        )}
+
+        {/* Motivo de rechazo */}
+        {isRejected && reserva.motivoRechazo && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+            <p className="text-xs text-red-600 mb-1 font-semibold">Motivo del rechazo:</p>
+            <p className="text-sm text-red-700">{reserva.motivoRechazo}</p>
           </div>
         )}
       </div>
+
+      {/* Acciones (solo para comercios con reservas pendientes) */}
+      {isOwner && isPending && !isPastReservation && onAprobar && onRechazar && (
+        <div className="px-4 pb-4 pt-2 flex gap-2">
+          <button
+            onClick={() => onAprobar(reserva)}
+            className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+          >
+            <CheckCircle className="w-4 h-4" />
+            <span>Aprobar</span>
+          </button>
+          <button
+            onClick={() => onRechazar(reserva)}
+            className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+          >
+            <XCircle className="w-4 h-4" />
+            <span>Rechazar</span>
+          </button>
+        </div>
+      )}
+
+      {/* Acción de cancelar (para usuarios con reservas pendientes o aprobadas) */}
+      {!isOwner && (isPending || isApproved) && !isPastReservation && onCancelar && (
+        <div className="px-4 pb-4 pt-2">
+          <button
+            onClick={() => onCancelar(reserva)}
+            className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+          >
+            <XCircle className="w-4 h-4" />
+            <span>Cancelar Reserva</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };

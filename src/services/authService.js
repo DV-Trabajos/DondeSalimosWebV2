@@ -26,7 +26,7 @@ export const signInWithGoogle = async (idToken) => {
  * @param {number} rolUsuario - ID del rol (1: Común, 2: Comercio)
  * @returns {Promise<Object>} { usuario, jwtToken }
  */
-export const signUpWithGoogle = async (idToken, rolUsuario = 1) => {
+export const signUpWithGoogle = async (idToken, rolUsuario = 16) => {
   try {
     const response = await apiPost('/api/usuarios/registrarseConGoogle', {
       idToken,

@@ -9,15 +9,15 @@ export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 // Roles de Usuario
 export const ROLES = {
-  USUARIO_COMUN: 1,
-  USUARIO_COMERCIO: 2,
-  ADMINISTRADOR: 3,
+  USUARIO_COMUN: 16,
+  USUARIO_COMERCIO: 3,
+  ADMINISTRADOR: 2,
 };
 
 export const ROLE_DESCRIPTIONS = {
-  1: 'Usuario Común',
-  2: 'Usuario Comercio',
-  3: 'Administrador',
+  16: 'Usuario Común',
+  3: 'Usuario Comercio',
+  2: 'Administrador',
 };
 
 // Estados
