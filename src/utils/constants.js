@@ -95,7 +95,7 @@ export const ROUTES = {
   PROFILE: '/profile',
   BAR_MANAGEMENT: '/bar-management',
   ADMIN_PANEL: '/admin',
-  RESERVAS: '/reservas',
+  RESERVATIONS: '/reservations',
   NOT_FOUND: '*',
 };
 

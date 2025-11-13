@@ -75,7 +75,7 @@ const ComercioCard = ({ comercio, onEdit, onReload }) => {
 
   const handleVerReservas = () => {
     // Navegar a la página de reservas con el tab de "Reservas Recibidas"
-    navigate('/reservas', { state: { activeTab: 'reservas-recibidas', comercioId: comercio.iD_Comercio } });
+    navigate('/reservations', { state: { activeTab: 'reservas-recibidas', comercioId: comercio.iD_Comercio } });
   };
 
   const getEstadoBadge = () => {
