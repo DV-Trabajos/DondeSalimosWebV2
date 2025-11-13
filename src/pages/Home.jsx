@@ -1,4 +1,4 @@
-// Home.jsx - Página principal COMPLETA con mapa, búsqueda, filtros y todas las funcionalidades
+// Home.jsx - Página principal CORREGIDA con filtros funcionando y geocodificación
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -13,11 +13,12 @@ import BarStories from '../components/Home/BarStories';
 import ReservaModal from '../components/Reservations/ReservaModal';
 import {
   getAllComercios,
-  searchComerciosByName,
   filterApprovedComercios,
   filterComerciosByType,
   sortComerciosByDistance,
+  geocodeAddress, // ✅ AGREGADO para geocodificar
 } from '../services/comerciosService';
+import { TIPOS_COMERCIO_FILTER } from '../utils/constants'; // ✅ AGREGADO
 import { MapPin, List, Loader, AlertCircle, Filter } from 'lucide-react';
 
 const Home = () => {
@@ -34,9 +35,10 @@ const Home = () => {
   const [showReservaModal, setShowReservaModal] = useState(false);
   const [selectedComercioForReserva, setSelectedComercioForReserva] = useState(null);
   
-  // Estados para filtros
+  // Estados para filtros - ✅ AGREGADO sortBy
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('name'); // ✅ NUEVO
   const [showFilters, setShowFilters] = useState(false);
   
   const { isAuthenticated } = useAuth();
@@ -48,49 +50,87 @@ const Home = () => {
   } = useLocation();
   const navigate = useNavigate();
 
-  // Categorías para el filtro
-  const categories = [
-    { id: 'all', label: 'Todos', icon: '🏪' },
-    { id: '1', label: 'Bares', icon: '🍺' },
-    { id: '2', label: 'Restaurantes', icon: '🍽️' },
-    { id: '3', label: 'Cafés', icon: '☕' },
-    { id: '4', label: 'Discotecas', icon: '🎉' },
-    { id: '5', label: 'Pubs', icon: '🍻' },
-  ];
+  // ✅ Usar constantes compartidas
+  const categories = TIPOS_COMERCIO_FILTER;
 
   // Cargar comercios al montar
   useEffect(() => {
     loadPlaces();
   }, []);
 
-  // Aplicar filtros cuando cambian los parámetros
+  // ✅ AGREGADO sortBy como dependencia
   useEffect(() => {
     applyFilters();
-  }, [places, selectedCategory, searchTerm, location]);
+  }, [places, selectedCategory, searchTerm, sortBy, location]);
 
+  // ✅ FUNCIÓN MEJORADA con geocodificación
   const loadPlaces = async () => {
     try {
       setIsLoading(true);
       setError(null);
+      
+      console.log('🔄 Cargando comercios...');
       const comercios = await getAllComercios();
+      console.log(`📦 Comercios obtenidos: ${comercios.length}`);
       
       // Filtrar solo comercios aprobados
       const aprobados = filterApprovedComercios(comercios);
-      setPlaces(aprobados);
+      console.log(`✅ Comercios aprobados: ${aprobados.length}`);
+      
+      // ✅ GEOCODIFICAR los comercios que no tienen coordenadas
+      console.log('🗺️ Geocodificando comercios...');
+      const comerciosConCoords = await Promise.all(
+        aprobados.map(async (comercio) => {
+          // Si ya tiene coordenadas válidas, retornar tal cual
+          if (comercio.latitud && comercio.longitud && 
+              comercio.latitud !== 0 && comercio.longitud !== 0) {
+            console.log(`✓ ${comercio.nombre} ya tiene coordenadas`);
+            return comercio;
+          }
+          
+          // Si no tiene, geocodificar
+          try {
+            console.log(`📍 Geocodificando: ${comercio.nombre} - ${comercio.direccion}`);
+            const coords = await geocodeAddress(comercio.direccion);
+            
+            return {
+              ...comercio,
+              latitud: coords.lat,
+              longitud: coords.lng
+            };
+          } catch (error) {
+            console.error(`❌ Error geocodificando ${comercio.nombre}:`, error);
+            
+            // Retornar con coordenadas por defecto cerca de Buenos Aires
+            // con un pequeño offset aleatorio para que no se superpongan
+            return {
+              ...comercio,
+              latitud: -34.6037 + (Math.random() - 0.5) * 0.01,
+              longitud: -58.3816 + (Math.random() - 0.5) * 0.01
+            };
+          }
+        })
+      );
+      
+      console.log(`✅ Geocodificación completa. ${comerciosConCoords.length} comercios listos.`);
+      setPlaces(comerciosConCoords);
+      
     } catch (err) {
-      console.error('Error cargando lugares:', err);
+      console.error('❌ Error cargando lugares:', err);
       setError('Error al cargar los lugares. Por favor, intenta nuevamente.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  // ✅ FUNCIÓN MEJORADA con todos los filtros
   const applyFilters = () => {
     let filtered = [...places];
 
     // Filtrar por categoría
     if (selectedCategory !== 'all') {
       filtered = filterComerciosByType(filtered, parseInt(selectedCategory));
+      console.log(`🎯 Filtrado por tipo ${selectedCategory}: ${filtered.length} resultados`);
     }
 
     // Filtrar por búsqueda
@@ -98,28 +138,60 @@ const Home = () => {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(c => 
         c.nombre.toLowerCase().includes(term) ||
-        c.direccion.toLowerCase().includes(term)
+        (c.direccion && c.direccion.toLowerCase().includes(term))
       );
+      console.log(`🔍 Filtrado por búsqueda "${searchTerm}": ${filtered.length} resultados`);
     }
 
-    // Ordenar por distancia si hay ubicación
-    if (location) {
-      filtered = sortComerciosByDistance(filtered, location);
+    // ✅ APLICAR ORDENAMIENTO según sortBy
+    switch (sortBy) {
+      case 'distance':
+        if (location) {
+          filtered = sortComerciosByDistance(filtered, location);
+          console.log('📏 Ordenado por distancia');
+        }
+        break;
+        
+      case 'rating':
+        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        console.log('⭐ Ordenado por calificación');
+        break;
+        
+      case 'name':
+      default:
+        filtered.sort((a, b) => a.nombre.localeCompare(b.nombre));
+        console.log('🔤 Ordenado por nombre');
+        break;
     }
 
     setFilteredPlaces(filtered);
   };
 
-  const handleSearch = (term) => {
+  // ✅ FUNCIÓN MEJORADA para recibir filtros del SearchBar
+  const handleSearch = (term, filters = {}) => {
+    console.log('🔍 Búsqueda recibida:', { term, filters });
+    
     setSearchTerm(term);
+    
+    // Aplicar filtro de tipo si existe
+    if (filters.type !== undefined) {
+      setSelectedCategory(filters.type === 'all' ? 'all' : filters.type.toString());
+    }
+    
+    // Aplicar ordenamiento si existe
+    if (filters.sortBy) {
+      setSortBy(filters.sortBy);
+    }
   };
 
   const handleCategoryChange = (categoryId) => {
+    console.log('📂 Categoría seleccionada:', categoryId);
     setSelectedCategory(categoryId);
     setShowFilters(false); // Cerrar el menú de filtros después de seleccionar
   };
 
   const handlePlaceClick = (place) => {
+    console.log('📍 Lugar seleccionado:', place.nombre);
     setSelectedPlace(place);
     setIsModalOpen(true);
   };
@@ -142,7 +214,7 @@ const Home = () => {
 
   const handleReview = (place) => {
     // Esta función se maneja dentro de PlaceDetailModal
-    console.log('Review:', place);
+    console.log('📝 Review:', place);
   };
 
   const handleStoryPress = (comercio) => {
@@ -278,10 +350,10 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Barra de búsqueda */}
+        {/* Barra de búsqueda - ✅ CORREGIDA */}
         <div className="mb-6">
           <SearchBar
-            onSearch={handleSearch}
+            onSearch={handleSearch}  /* ✅ Ahora recibe term Y filters */
             isLoading={isLoading}
           />
         </div>
@@ -307,14 +379,14 @@ const Home = () => {
         ) : viewMode === 'map' ? (
           <div className="relative">
             <GoogleMapView
-              places={filteredPlaces}
+              places={filteredPlaces}  /* ✅ Ahora con coordenadas geocodificadas */
               userLocation={location}
               selectedPlace={selectedPlace}
               onPlaceClick={handlePlaceClick}
               onMapClick={() => setSelectedPlace(null)}
             />
 
-            {/* BarStories sobre el mapa - SIN CategoryFilter */}
+            {/* BarStories sobre el mapa */}
             <BarStories onStoryPress={handleStoryPress} />
           </div>
         ) : (
@@ -334,12 +406,17 @@ const Home = () => {
               <strong>{places.length}</strong> lugares
               {selectedCategory !== 'all' && (
                 <span className="ml-2 text-primary font-semibold">
-                  (Filtrado por categoría)
+                  (Filtrado por categoría: {categories.find(c => c.id === selectedCategory)?.label})
                 </span>
               )}
               {searchTerm && (
                 <span className="ml-2 text-primary font-semibold">
                   (Búsqueda: "{searchTerm}")
+                </span>
+              )}
+              {sortBy !== 'name' && (
+                <span className="ml-2 text-primary font-semibold">
+                  (Ordenado por: {sortBy === 'distance' ? 'Distancia' : 'Calificación'})
                 </span>
               )}
             </p>

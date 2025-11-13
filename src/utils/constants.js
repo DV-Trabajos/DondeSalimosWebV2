@@ -1,4 +1,4 @@
-// constants.js - Constantes del proyecto
+// constants.js - Constantes del proyecto ACTUALIZADO
 
 // API Base URL
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
@@ -36,21 +36,34 @@ export const COMERCIO_ESTADOS = {
 // Tipos de Comercio
 export const TIPOS_COMERCIO = {
   BAR: 1,
-  RESTAURANTE: 2,
-  CAFE: 3,
-  DISCOTECA: 4,
-  PUB: 5,
-  OTRO: 6,
+  BOLICHE: 2,
+  RESTAURANTE: 3,
+  CAFE: 4,
+  DISCOTECA: 5,
+  PUB: 6,
+  OTRO: 7,
 };
 
 export const TIPOS_COMERCIO_DESCRIPCION = {
   1: 'Bar',
-  2: 'Restaurante',
-  3: 'Café',
-  4: 'Discoteca',
-  5: 'Pub',
-  6: 'Otro',
+  2: 'Boliche/Club',
+  3: 'Restaurante',
+  4: 'Café',
+  5: 'Discoteca',
+  6: 'Pub',
+  7: 'Otro',
 };
+
+// ✅ NUEVO - Constantes de filtros compartidas entre componentes
+export const TIPOS_COMERCIO_FILTER = [
+  { id: 'all', label: 'Todos', icon: '🏪' },
+  { id: '1', label: 'Bares', icon: '🍺' },
+  { id: '2', label: 'Boliches', icon: '🎉' },
+  { id: '3', label: 'Restaurantes', icon: '🍽️' },
+  { id: '4', label: 'Cafés', icon: '☕' },
+  { id: '5', label: 'Discotecas', icon: '💃' },
+  { id: '6', label: 'Pubs', icon: '🍻' },
+];
 
 // Estados de Reserva
 export const RESERVA_ESTADOS = {
@@ -128,6 +141,7 @@ export default {
   COMERCIO_ESTADOS,
   TIPOS_COMERCIO,
   TIPOS_COMERCIO_DESCRIPCION,
+  TIPOS_COMERCIO_FILTER, // ✅ AGREGADO
   RESERVA_ESTADOS,
   STORAGE_KEYS,
   MENSAJES,
