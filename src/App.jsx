@@ -14,10 +14,12 @@ import Login from './pages/Login';
 import Profile from './pages/Profile';
 import BarManagement from './pages/BarManagement';
 import Reservations from './pages/Reservations';
-import ReservasMisReservas from './pages/ReservasMisReservas';
 import ReservasComercio from './pages/ReservasComercio';
 import AdminPanel from './pages/AdminPanel';
 import NotFound from './pages/NotFound';
+
+// Importar Reservas desde components (con tabs)
+import Reservas from './components/Reservations/Reservas';
 
 function App() {
   return (
@@ -38,6 +40,38 @@ function App() {
                     <Profile />
                   </ProtectedRoute>
                 }
+              />
+
+              {/* Ruta de reservas con tabs */}
+              <Route 
+                path="/reservas" 
+                element={
+                  <ProtectedRoute>
+                    <Reservas />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Ruta alternativa de reservations */}
+              <Route 
+                path="/reservations" 
+                element={
+                  <ProtectedRoute>
+                    <Reservations />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Ruta específica para reservas de comercio */}
+              <Route 
+                path="/reservas-comercio" 
+                element={
+                  <ProtectedRoute>
+                    <BarOwnerGuard>
+                      <ReservasComercio />
+                    </BarOwnerGuard>
+                  </ProtectedRoute>
+                } 
               />
 
               {/* Rutas de administrador */}
@@ -62,26 +96,6 @@ function App() {
                     </BarOwnerGuard>
                   </ProtectedRoute>
                 }
-              />
-
-              {/* Nueva: Mis Reservas (Usuario Normal) */}
-              <Route 
-                path="/mis-reservas" 
-                element={
-                  <ProtectedRoute>
-                    <ReservasMisReservas />
-                  </ProtectedRoute>
-                } 
-              />
-
-              {/* Nueva: Reservas del Comercio (Dueño) */}
-              <Route 
-                path="/reservas-comercio" 
-                element={
-                  <ProtectedRoute>
-                    <ReservasComercio />
-                  </ProtectedRoute>
-                } 
               />
 
               {/* Página 404 */}
