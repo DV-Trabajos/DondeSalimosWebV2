@@ -14,6 +14,8 @@ import Login from './pages/Login';
 import Profile from './pages/Profile';
 import BarManagement from './pages/BarManagement';
 import Reservations from './pages/Reservations';
+import ReservasMisReservas from './pages/ReservasMisReservas';
+import ReservasComercio from './pages/ReservasComercio';
 import AdminPanel from './pages/AdminPanel';
 import NotFound from './pages/NotFound';
 
@@ -62,14 +64,24 @@ function App() {
                 }
               />
 
-              {/* Ruta de reservas */}
-              <Route
-                path="/reservations"
+              {/* Nueva: Mis Reservas (Usuario Normal) */}
+              <Route 
+                path="/mis-reservas" 
                 element={
                   <ProtectedRoute>
-                    <Reservations />
+                    <ReservasMisReservas />
                   </ProtectedRoute>
-                }
+                } 
+              />
+
+              {/* Nueva: Reservas del Comercio (Dueño) */}
+              <Route 
+                path="/reservas-comercio" 
+                element={
+                  <ProtectedRoute>
+                    <ReservasComercio />
+                  </ProtectedRoute>
+                } 
               />
 
               {/* Página 404 */}

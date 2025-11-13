@@ -1,21 +1,29 @@
-// src/pages/Reservas.jsx
+// src/components/Reservations/Reservas.jsx
+// Página de gestión de reservas con tabs
+
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Calendar, Users, Clock, AlertCircle } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
-import ReservaCard from '../components/Reservations/ReservaCard';
-import ReservasRecibidas from '../components/Reservations/ReservasRecibidas';
+import { useAuth } from '../../hooks/useAuth';
+import ReservaCard from './ReservaCard';
+import ReservasRecibidas from './ReservasRecibidas';
 import { 
   getAllReservas,
   cancelReserva 
-} from '../services/reservasService';
+} from '../../services/reservasService';
 
 /**
  * Página de gestión de reservas
  * Muestra diferentes vistas según el rol del usuario
  */
 const Reservas = () => {
+  const location = useLocation();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('mis-reservas');
+  
+  // 🔧 MODIFICACIÓN: Leer el tab inicial desde location.state
+  const initialTab = location.state?.activeTab || 'mis-reservas';
+  const [activeTab, setActiveTab] = useState(initialTab);
+  
   const [reservas, setReservas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -135,38 +143,55 @@ const Reservas = () => {
         {activeTab === 'mis-reservas' ? (
           <>
             {/* Estadísticas */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-1">Total</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {estadisticasMisReservas.total}
-                </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-500 text-sm">Total</p>
+                    <p className="text-2xl font-bold text-gray-800">{estadisticasMisReservas.total}</p>
+                  </div>
+                  <Calendar className="w-8 h-8 text-blue-500" />
+                </div>
               </div>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p className="text-sm text-yellow-800 mb-1">Pendientes</p>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {estadisticasMisReservas.pendientes}
-                </p>
+
+              <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-yellow-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-500 text-sm">Pendientes</p>
+                    <p className="text-2xl font-bold text-gray-800">{estadisticasMisReservas.pendientes}</p>
+                  </div>
+                  <Clock className="w-8 h-8 text-yellow-500" />
+                </div>
               </div>
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-sm text-green-800 mb-1">Aprobadas</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {estadisticasMisReservas.aprobadas}
-                </p>
+
+              <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-green-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-500 text-sm">Confirmadas</p>
+                    <p className="text-2xl font-bold text-gray-800">{estadisticasMisReservas.aprobadas}</p>
+                  </div>
+                  <Users className="w-8 h-8 text-green-500" />
+                </div>
               </div>
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-sm text-red-800 mb-1">Canceladas</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {estadisticasMisReservas.canceladas}
-                </p>
+
+              <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-red-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-500 text-sm">Canceladas</p>
+                    <p className="text-2xl font-bold text-gray-800">{estadisticasMisReservas.canceladas}</p>
+                  </div>
+                  <AlertCircle className="w-8 h-8 text-red-500" />
+                </div>
               </div>
             </div>
 
-            {/* Lista de mis reservas */}
+            {/* Lista de Mis Reservas */}
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p className="text-gray-600">Cargando tus reservas...</p>
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-gray-600">Cargando tus reservas...</p>
+                </div>
               </div>
             ) : error ? (
               <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">

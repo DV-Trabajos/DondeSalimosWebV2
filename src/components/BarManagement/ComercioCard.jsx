@@ -61,12 +61,14 @@ const ComercioCard = ({ comercio, onEdit, onReload }) => {
   };
 
   const handleDelete = async () => {
-    if (!confirm('¿Estás seguro de eliminar este comercio?')) return;
-
+    if (!confirm('¿Estás seguro de eliminar este comercio?')) {
+      return;
+    }
+    
     try {
       await deleteComercio(comercio.iD_Comercio);
       alert('Comercio eliminado exitosamente');
-      onReload();
+      if (onReload) onReload();
     } catch (error) {
       console.error('Error eliminando comercio:', error);
       alert('Error al eliminar el comercio');
@@ -74,30 +76,12 @@ const ComercioCard = ({ comercio, onEdit, onReload }) => {
   };
 
   const handleVerReservas = () => {
-    // Navegar a la página de reservas con el tab de "Reservas Recibidas"
-    navigate('/reservations', { state: { activeTab: 'reservas-recibidas', comercioId: comercio.iD_Comercio } });
-  };
-
-  const getEstadoBadge = () => {
-    if (comercio.estado === true) {
-      return (
-        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold flex items-center gap-1">
-          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-          Aprobado
-        </span>
-      );
-    } else {
-      return (
-        <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-semibold flex items-center gap-1">
-          <Clock className="w-3 h-3" />
-          Pendiente
-        </span>
-      );
-    }
+    // 🔧 MODIFICACIÓN: Redirigir a la página de reservas y cambiar al tab correcto
+    navigate('/reservas', { state: { activeTab: 'reservas-recibidas' } });
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition">
       {/* Imagen */}
       <div className="h-48 bg-gray-200 relative">
         <img
@@ -108,18 +92,20 @@ const ComercioCard = ({ comercio, onEdit, onReload }) => {
             e.target.src = 'https://via.placeholder.com/400x200?text=No+Image';
           }}
         />
-        <div className="absolute top-2 right-2">
-          {getEstadoBadge()}
-        </div>
         
-        {/* Badge de reservas pendientes */}
-        {estadisticas.pendientes > 0 && (
-          <div className="absolute top-2 left-2">
-            <span className="px-3 py-1 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse">
-              {estadisticas.pendientes} {estadisticas.pendientes === 1 ? 'pendiente' : 'pendientes'}
+        {/* Badge de estado de aprobación */}
+        <div className="absolute top-2 right-2">
+          {comercio.aprobado ? (
+            <span className="px-3 py-1 bg-green-500 text-white rounded-full text-sm font-semibold flex items-center gap-1">
+              <TrendingUp className="w-4 h-4" />
+              Visible
             </span>
-          </div>
-        )}
+          ) : (
+            <span className="px-3 py-1 bg-yellow-500 text-white rounded-full text-sm font-semibold">
+              Pendiente aprobación
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Contenido */}
@@ -155,7 +141,9 @@ const ComercioCard = ({ comercio, onEdit, onReload }) => {
             </div>
             <div className="text-center border-x border-purple-200">
               <p className="text-2xl font-bold text-yellow-600">{estadisticas.pendientes}</p>
-              <p className="text-xs text-gray-600">Pendientes</p>
+              <p className="text-xs text-gray-600">
+                {estadisticas.pendientes === 1 ? 'pendiente' : 'pendientes'}
+              </p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-blue-600">{estadisticas.hoy}</p>
@@ -172,7 +160,7 @@ const ComercioCard = ({ comercio, onEdit, onReload }) => {
             className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-3 rounded-lg hover:from-purple-700 hover:to-pink-700 transition font-semibold flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
           >
             <Calendar className="w-5 h-5" />
-            Ver Reservas
+            Ver Reservas Recibidas
             {estadisticas.pendientes > 0 && (
               <span className="ml-1 px-2 py-0.5 bg-white text-purple-600 rounded-full text-xs font-bold">
                 {estadisticas.pendientes}
