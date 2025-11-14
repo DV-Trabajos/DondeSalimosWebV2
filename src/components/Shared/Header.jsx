@@ -1,4 +1,5 @@
 // Header.jsx - Componente de navegación superior
+// Versión actualizada con "Mis Reseñas" en el menú
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -12,7 +13,8 @@ import {
   Home, 
   Calendar,
   Store,
-  Shield
+  Shield,
+  MessageSquare
 } from 'lucide-react';
 
 const Header = () => {
@@ -30,6 +32,7 @@ const Header = () => {
     { label: 'Inicio', path: '/', icon: Home, show: true },
     { label: 'Mis Reservas', path: '/reservations', icon: Calendar, show: isAuthenticated },
     { label: 'Mis Comercios', path: '/bar-management', icon: Store, show: isBarOwner },
+    { label: 'Mis Reseñas', path: '/mis-resenias', icon: MessageSquare, show: isBarOwner },
     { label: 'Admin Panel', path: '/admin', icon: Shield, show: isAdmin },
   ];
 
@@ -134,12 +137,6 @@ const Header = () => {
                   >
                     <User className="w-5 h-5" />
                     Mi Perfil
-                  </Link>
-                  <Link
-                    to="/reservas"
-                    className="text-gray-700 hover:text-primary transition font-medium"
-                  >
-                    Mis Reservas
                   </Link>
                   <button
                     onClick={handleLogout}

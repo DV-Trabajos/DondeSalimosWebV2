@@ -1,6 +1,50 @@
-// roleHelper.js - Helpers para manejo de roles de usuario
+// roleHelper.js - Utilidades para manejo de roles de usuario
+// Fase 5: Perfiles de Usuario
 
-import { ROLES, ROLE_DESCRIPTIONS } from './constants';
+/**
+ * IDs de roles en el sistema
+ */
+export const ROLES = {
+  USUARIO_COMUN: 1,
+  USUARIO_COMERCIO: 2,
+  ADMINISTRADOR: 3,
+};
+
+/**
+ * Descripciones de roles por ID
+ */
+const ROLE_DESCRIPTIONS = {
+  2: 'Administrador',
+  3: 'Dueño de Comercio',
+  16: 'Usuario',
+};
+
+/**
+ * Descripciones detalladas de roles
+ */
+const ROLE_DETAILED_DESCRIPTIONS = {
+  1: 'Puede hacer reservas y dejar reseñas en comercios',
+  2: 'Puede gestionar comercios, ver reservas y reseñas recibidas',
+  3: 'Acceso completo al sistema y panel de administración',
+};
+
+/**
+ * Colores para cada rol (para badges)
+ */
+const ROLE_COLORS = {
+  1: 'blue',   // Usuario común
+  2: 'purple', // Dueño de comercio
+  3: 'red',    // Administrador
+};
+
+/**
+ * Íconos para cada rol (emoji)
+ */
+const ROLE_ICONS = {
+  1: '👤', // Usuario común
+  2: '🏪', // Dueño de comercio
+  3: '👑', // Administrador
+};
 
 /**
  * Obtiene la descripción de un rol por su ID
@@ -12,93 +56,178 @@ export const getRoleDescriptionById = (roleId) => {
 };
 
 /**
- * Obtiene el ID de un rol por su descripción
- * @param {string} description - Descripción del rol
- * @returns {number|null} ID del rol o null si no existe
+ * Obtiene la descripción detallada de un rol
+ * @param {number} roleId - ID del rol
+ * @returns {string} Descripción detallada
  */
-export const getRoleIdByDescription = (description) => {
-  const entry = Object.entries(ROLE_DESCRIPTIONS).find(
-    ([, desc]) => desc.toLowerCase() === description.toLowerCase()
-  );
-  return entry ? parseInt(entry[0]) : null;
+export const getRoleDetailedDescription = (roleId) => {
+  return ROLE_DETAILED_DESCRIPTIONS[roleId] || 'Sin descripción';
 };
 
 /**
- * Verifica si un rol es de Usuario Común
+ * Obtiene el color asociado a un rol
  * @param {number} roleId - ID del rol
- * @returns {boolean}
+ * @returns {string} Color (blue, purple, red)
+ */
+export const getRoleColor = (roleId) => {
+  return ROLE_COLORS[roleId] || 'gray';
+};
+
+/**
+ * Obtiene el ícono (emoji) de un rol
+ * @param {number} roleId - ID del rol
+ * @returns {string} Emoji del rol
+ */
+export const getRoleIcon = (roleId) => {
+  return ROLE_ICONS[roleId] || '❓';
+};
+
+/**
+ * Obtiene las clases de Tailwind para un badge de rol
+ * @param {number} roleId - ID del rol
+ * @returns {string} Clases de Tailwind
+ */
+export const getRoleBadgeClasses = (roleId) => {
+  const baseClasses = 'px-3 py-1 rounded-full text-sm font-semibold';
+  
+  switch (roleId) {
+    case ROLES.USUARIO_COMUN:
+      return `${baseClasses} bg-blue-100 text-blue-800 border border-blue-200`;
+    case ROLES.USUARIO_COMERCIO:
+      return `${baseClasses} bg-purple-100 text-purple-800 border border-purple-200`;
+    case ROLES.ADMINISTRADOR:
+      return `${baseClasses} bg-red-100 text-red-800 border border-red-200`;
+    default:
+      return `${baseClasses} bg-gray-100 text-gray-800 border border-gray-200`;
+  }
+};
+
+/**
+ * Verifica si un rol es válido
+ * @param {number} roleId - ID del rol
+ * @returns {boolean} true si es válido
+ */
+export const isValidRole = (roleId) => {
+  return Object.values(ROLES).includes(roleId);
+};
+
+/**
+ * Verifica si un rol es de usuario común
+ * @param {number} roleId - ID del rol
+ * @returns {boolean} true si es usuario común
  */
 export const isUsuarioComun = (roleId) => {
   return roleId === ROLES.USUARIO_COMUN;
 };
 
 /**
- * Verifica si un rol es de Usuario Comercio
+ * Verifica si un rol es de dueño de comercio
  * @param {number} roleId - ID del rol
- * @returns {boolean}
+ * @returns {boolean} true si es dueño de comercio
  */
 export const isUsuarioComercio = (roleId) => {
   return roleId === ROLES.USUARIO_COMERCIO;
 };
 
 /**
- * Verifica si un rol es de Administrador
+ * Verifica si un rol es de administrador
  * @param {number} roleId - ID del rol
- * @returns {boolean}
+ * @returns {boolean} true si es administrador
  */
 export const isAdministrador = (roleId) => {
   return roleId === ROLES.ADMINISTRADOR;
 };
 
 /**
- * Obtiene todos los roles disponibles
- * @returns {Array<{id: number, description: string}>}
+ * Obtiene todos los roles disponibles para selección
+ * @returns {Array} Lista de roles con id, nombre y descripción
  */
 export const getAllRoles = () => {
-  return Object.entries(ROLE_DESCRIPTIONS).map(([id, description]) => ({
-    id: parseInt(id),
-    description,
+  return Object.values(ROLES).map(roleId => ({
+    id: roleId,
+    nombre: getRoleDescriptionById(roleId),
+    descripcion: getRoleDetailedDescription(roleId),
+    icon: getRoleIcon(roleId),
+    color: getRoleColor(roleId)
   }));
 };
 
 /**
- * Verifica si un usuario tiene permisos de administrador
- * @param {Object} user - Objeto usuario
- * @returns {boolean}
+ * Verifica si un rol tiene permisos de administrador
+ * @param {number} roleId - ID del rol
+ * @returns {boolean} true si tiene permisos de admin
  */
-export const hasAdminPermissions = (user) => {
-  if (!user) return false;
-  return user.iD_RolUsuario === ROLES.ADMINISTRADOR;
+export const hasAdminPermissions = (roleId) => {
+  return roleId === ROLES.ADMINISTRADOR;
 };
 
 /**
- * Verifica si un usuario tiene permisos de comercio
- * @param {Object} user - Objeto usuario
- * @returns {boolean}
+ * Verifica si un rol tiene permisos de administrador
+ * @param {number} roleId - ID del rol
+ * @returns {boolean} true si tiene permisos de admin
  */
-export const hasComercioPermissions = (user) => {
-  if (!user) return false;
-  return user.iD_RolUsuario === ROLES.USUARIO_COMERCIO;
+export const hasComercioPermissions = (roleId) => {
+  return roleId === ROLES.USUARIO_COMERCIO;
 };
 
 /**
- * Verifica si un usuario es común
- * @param {Object} user - Objeto usuario
- * @returns {boolean}
+ * Verifica si un rol puede gestionar comercios
+ * @param {number} roleId - ID del rol
+ * @returns {boolean} true si puede gestionar comercios
  */
-export const isCommonUser = (user) => {
-  if (!user) return false;
-  return user.iD_RolUsuario === ROLES.USUARIO_COMUN;
+export const canManageComercios = (roleId) => {
+  return roleId === ROLES.USUARIO_COMERCIO || roleId === ROLES.ADMINISTRADOR;
+};
+
+/**
+ * Verifica si un rol puede hacer reservas
+ * @param {number} roleId - ID del rol
+ * @returns {boolean} true si puede hacer reservas
+ */
+export const canMakeReservas = (roleId) => {
+  // Todos los roles pueden hacer reservas
+  return isValidRole(roleId);
+};
+
+/**
+ * Verifica si un rol puede dejar reseñas
+ * @param {number} roleId - ID del rol
+ * @returns {boolean} true si puede dejar reseñas
+ */
+export const canMakeResenias = (roleId) => {
+  // Solo usuarios comunes y dueños de comercio pueden dejar reseñas
+  return roleId === ROLES.USUARIO_COMUN || roleId === ROLES.USUARIO_COMERCIO;
+};
+
+/**
+ * Obtiene el nombre del rol en inglés (para rutas, etc.)
+ * @param {number} roleId - ID del rol
+ * @returns {string} Nombre del rol en inglés
+ */
+export const getRoleSlug = (roleId) => {
+  const slugs = {
+    1: 'user',
+    2: 'business',
+    3: 'admin'
+  };
+  return slugs[roleId] || 'unknown';
 };
 
 export default {
+  ROLES,
   getRoleDescriptionById,
-  getRoleIdByDescription,
+  getRoleDetailedDescription,
+  getRoleColor,
+  getRoleIcon,
+  getRoleBadgeClasses,
+  isValidRole,
   isUsuarioComun,
   isUsuarioComercio,
   isAdministrador,
   getAllRoles,
   hasAdminPermissions,
-  hasComercioPermissions,
-  isCommonUser,
+  canManageComercios,
+  canMakeReservas,
+  canMakeResenias,
+  getRoleSlug,
 };

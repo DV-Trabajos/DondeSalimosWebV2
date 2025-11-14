@@ -15,6 +15,7 @@ import Profile from './pages/Profile';
 import BarManagement from './pages/BarManagement';
 import Reservations from './pages/Reservations';
 import ReservasComercio from './pages/ReservasComercio';
+import MisResenias from './pages/MisResenias';
 import AdminPanel from './pages/AdminPanel';
 import NotFound from './pages/NotFound';
 
@@ -70,6 +71,15 @@ function App() {
                     <BarOwnerGuard>
                       <ReservasComercio />
                     </BarOwnerGuard>
+                  </ProtectedRoute>
+                } 
+              />
+
+              <Route 
+                path="/mis-resenias" 
+                element={
+                  <ProtectedRoute>
+                    <MisResenias />
                   </ProtectedRoute>
                 } 
               />
