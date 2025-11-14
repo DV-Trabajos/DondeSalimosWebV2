@@ -1,4 +1,5 @@
 // BarManagement.jsx - Gestión de comercios del usuario
+// Fase 6: Versión actualizada con formulario completo
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -28,7 +29,7 @@ const BarManagement = () => {
       const data = await getComerciosByUsuario(user.iD_Usuario);
       setComercios(data);
     } catch (error) {
-      console.error('Error cargando comercios:', error);
+      console.error('❌ Error cargando comercios:', error);
     } finally {
       setIsLoading(false);
     }
@@ -40,6 +41,11 @@ const BarManagement = () => {
   };
 
   const handleFormClose = () => {
+    setShowForm(false);
+    setEditingComercio(null);
+  };
+
+  const handleFormSuccess = () => {
     setShowForm(false);
     setEditingComercio(null);
     loadComercios();
@@ -55,13 +61,13 @@ const BarManagement = () => {
       <ComercioForm
         comercio={editingComercio}
         onClose={handleFormClose}
-        userId={user.iD_Usuario}
+        onSuccess={handleFormSuccess}
       />
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
@@ -75,7 +81,7 @@ const BarManagement = () => {
           </div>
           <button
             onClick={handleNew}
-            className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition font-semibold flex items-center gap-2"
+            className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition font-semibold flex items-center gap-2 shadow-md hover:shadow-lg"
           >
             <Plus className="w-5 h-5" />
             Nuevo Comercio
@@ -89,7 +95,7 @@ const BarManagement = () => {
         )}
 
         {!isLoading && comercios.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-lg shadow-md">
+          <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100">
             <Store className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-800 mb-2">
               No tienes comercios registrados

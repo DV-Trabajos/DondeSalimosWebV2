@@ -1,151 +1,53 @@
-// formatters.js - Funciones de formateo
+// formatters.js - Utilidades para formatear datos
+// Incluye conversión de imágenes a base64
 
 /**
- * Convierte Base64 a URL de imagen
- * @param {string} base64 - String en Base64
+ * Convierte un archivo de imagen a base64
+ * @param {File} file - Archivo de imagen
+ * @returns {Promise<string>} String base64 de la imagen
+ */
+export const convertImageToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    
+    reader.onload = () => {
+      // Obtener solo el base64 sin el prefijo data:image/...;base64,
+      const base64String = reader.result.split(',')[1];
+      resolve(base64String);
+    };
+    
+    reader.onerror = (error) => {
+      reject(error);
+    };
+    
+    reader.readAsDataURL(file);
+  });
+};
+
+/**
+ * Convierte un string base64 a una URL de imagen para mostrar
+ * @param {string} base64String - String base64
+ * @param {string} mimeType - Tipo MIME (default: image/jpeg)
  * @returns {string} URL de la imagen
  */
-export const convertBase64ToImage = (base64) => {
-  if (!base64) return null;
+export const convertBase64ToImage = (base64String, mimeType = 'image/jpeg') => {
+  if (!base64String) return null;
   
-  // Si ya tiene el prefijo data:image, devolverlo tal cual
-  if (base64.startsWith('data:image/')) {
-    return base64;
+  // Si ya tiene el prefijo data:, retornarlo tal cual
+  if (base64String.startsWith('data:')) {
+    return base64String;
   }
   
-  // Agregar el prefijo por defecto (jpeg)
-  return `data:image/jpeg;base64,${base64}`;
+  // Si no, agregar el prefijo
+  return `data:${mimeType};base64,${base64String}`;
 };
 
 /**
- * Formatea una fecha a formato DD/MM/YYYY
- * @param {Date|string} date - Fecha a formatear
- * @returns {string} Fecha formateada
+ * Formatea un número como moneda argentina
+ * @param {number} amount - Cantidad a formatear
+ * @returns {string} Cantidad formateada
  */
-export const formatDate = (date) => {
-  if (!date) return '';
-  
-  const d = new Date(date);
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  
-  return `${day}/${month}/${year}`;
-};
-
-/**
- * Formatea una hora a formato HH:MM
- * @param {Date|string} date - Fecha con hora
- * @returns {string} Hora formateada
- */
-export const formatTime = (date) => {
-  if (!date) return '';
-  
-  const d = new Date(date);
-  const hours = String(d.getHours()).padStart(2, '0');
-  const minutes = String(d.getMinutes()).padStart(2, '0');
-  
-  return `${hours}:${minutes}`;
-};
-
-/**
- * Formatea una fecha completa con hora
- * @param {Date|string} date - Fecha a formatear
- * @returns {string} Fecha y hora formateada
- */
-export const formatDateTime = (date) => {
-  if (!date) return '';
-  
-  return `${formatDate(date)} ${formatTime(date)}`;
-};
-
-/**
- * Convierte una fecha a formato relativo (hace X días)
- * @param {Date|string} date - Fecha a convertir
- * @returns {string} Texto relativo
- */
-export const getRelativeTime = (date) => {
-  if (!date) return '';
-  
-  const d = new Date(date);
-  const now = new Date();
-  const diffMs = now - d;
-  const diffSeconds = Math.floor(diffMs / 1000);
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  const diffHours = Math.floor(diffMinutes / 60);
-  const diffDays = Math.floor(diffHours / 24);
-  
-  if (diffSeconds < 60) {
-    return 'Hace un momento';
-  } else if (diffMinutes < 60) {
-    return `Hace ${diffMinutes} ${diffMinutes === 1 ? 'minuto' : 'minutos'}`;
-  } else if (diffHours < 24) {
-    return `Hace ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
-  } else if (diffDays < 7) {
-    return `Hace ${diffDays} ${diffDays === 1 ? 'día' : 'días'}`;
-  } else {
-    return formatDate(date);
-  }
-};
-
-/**
- * Formatea un número de teléfono
- * @param {string} phone - Número de teléfono
- * @returns {string} Teléfono formateado
- */
-export const formatPhoneNumber = (phone) => {
-  if (!phone) return '';
-  
-  // Eliminar caracteres no numéricos
-  const cleaned = phone.replace(/\D/g, '');
-  
-  // Formato: +54 11 1234-5678
-  if (cleaned.length === 10) {
-    return `${cleaned.slice(0, 2)} ${cleaned.slice(2, 6)}-${cleaned.slice(6)}`;
-  }
-  
-  return phone;
-};
-
-/**
- * Formatea un CUIT
- * @param {string} cuit - CUIT a formatear
- * @returns {string} CUIT formateado
- */
-export const formatCUIT = (cuit) => {
-  if (!cuit) return '';
-  
-  // Eliminar guiones existentes
-  const cleaned = cuit.replace(/-/g, '');
-  
-  // Formato: XX-XXXXXXXX-X
-  if (cleaned.length === 11) {
-    return `${cleaned.slice(0, 2)}-${cleaned.slice(2, 10)}-${cleaned.slice(10)}`;
-  }
-  
-  return cuit;
-};
-
-/**
- * Trunca un texto a una longitud específica
- * @param {string} text - Texto a truncar
- * @param {number} maxLength - Longitud máxima
- * @returns {string} Texto truncado
- */
-export const truncateText = (text, maxLength = 100) => {
-  if (!text || text.length <= maxLength) return text;
-  
-  return `${text.substring(0, maxLength)}...`;
-};
-
-/**
- * Formatea un precio en pesos argentinos
- * @param {number} amount - Monto
- * @returns {string} Precio formateado
- */
-export const formatPrice = (amount) => {
-  if (amount === null || amount === undefined) return '';
-  
+export const formatCurrency = (amount) => {
   return new Intl.NumberFormat('es-AR', {
     style: 'currency',
     currency: 'ARS',
@@ -153,66 +55,69 @@ export const formatPrice = (amount) => {
 };
 
 /**
- * Capitaliza la primera letra de un string
- * @param {string} str - String a capitalizar
- * @returns {string} String capitalizado
+ * Formatea una fecha en formato legible
+ * @param {string|Date} date - Fecha a formatear
+ * @param {boolean} includeTime - Si incluir la hora
+ * @returns {string} Fecha formateada
  */
-export const capitalize = (str) => {
-  if (!str) return '';
+export const formatDate = (date, includeTime = false) => {
+  const options = {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  };
   
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-};
-
-/**
- * Formatea un nombre completo
- * @param {string} firstName - Nombre
- * @param {string} lastName - Apellido
- * @returns {string} Nombre completo formateado
- */
-export const formatFullName = (firstName, lastName) => {
-  const parts = [];
-  
-  if (firstName) parts.push(capitalize(firstName));
-  if (lastName) parts.push(capitalize(lastName));
-  
-  return parts.join(' ');
-};
-
-/**
- * Valida un email
- * @param {string} email - Email a validar
- * @returns {boolean} true si es válido
- */
-export const isValidEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
-
-/**
- * Valida un CUIT argentino
- * @param {string} cuit - CUIT a validar
- * @returns {boolean} true si es válido
- */
-export const isValidCUIT = (cuit) => {
-  const cleaned = cuit.replace(/-/g, '');
-  
-  if (cleaned.length !== 11 || !/^\d+$/.test(cleaned)) {
-    return false;
+  if (includeTime) {
+    options.hour = '2-digit';
+    options.minute = '2-digit';
   }
   
-  // Validar dígito verificador
-  const multipliers = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
-  let sum = 0;
+  return new Date(date).toLocaleDateString('es-AR', options);
+};
+
+/**
+ * Formatea un teléfono argentino
+ * @param {string} phone - Teléfono sin formato
+ * @returns {string} Teléfono formateado
+ */
+export const formatPhone = (phone) => {
+  if (!phone) return '';
   
-  for (let i = 0; i < 10; i++) {
-    sum += parseInt(cleaned[i]) * multipliers[i];
+  // Remover todo lo que no sea número
+  const cleaned = phone.replace(/\D/g, '');
+  
+  // Formatear según longitud
+  if (cleaned.length === 10) {
+    // (011) 1234-5678
+    return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 7)}-${cleaned.slice(7)}`;
   }
   
-  let checkDigit = 11 - (sum % 11);
-  if (checkDigit === 11) checkDigit = 0;
-  if (checkDigit === 10) checkDigit = 9;
-  
-  return checkDigit === parseInt(cleaned[10]);
+  return phone;
+};
+
+/**
+ * Trunca un texto a una longitud máxima
+ * @param {string} text - Texto a truncar
+ * @param {number} maxLength - Longitud máxima
+ * @returns {string} Texto truncado
+ */
+export const truncateText = (text, maxLength = 100) => {
+  if (!text || text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+};
+
+/**
+ * Formatea un horario (HH:MM:SS a HH:MM)
+ * @param {string} time - Horario con segundos
+ * @returns {string} Horario sin segundos
+ */
+export const formatTime = (time) => {
+  if (!time) return '';
+  const parts = time.split(':');
+  if (parts.length >= 2) {
+    return `${parts[0]}:${parts[1]}`;
+  }
+  return time;
 };
 
 /**
@@ -221,10 +126,9 @@ export const isValidCUIT = (cuit) => {
  * @returns {string} Iniciales
  */
 export const getInitials = (name) => {
-  if (!name) return '';
+  if (!name) return '?';
   
   const parts = name.trim().split(' ');
-  
   if (parts.length === 1) {
     return parts[0].charAt(0).toUpperCase();
   }
@@ -233,44 +137,32 @@ export const getInitials = (name) => {
 };
 
 /**
- * Formatea un número con separadores de miles
- * @param {number} num - Número a formatear
- * @returns {string} Número formateado
+ * Calcula el tiempo transcurrido desde una fecha
+ * @param {string|Date} date - Fecha
+ * @returns {string} Tiempo transcurrido
  */
-export const formatNumber = (num) => {
-  if (num === null || num === undefined) return '0';
+export const getTimeAgo = (date) => {
+  const now = new Date();
+  const past = new Date(date);
+  const diffInSeconds = Math.floor((now - past) / 1000);
   
-  return new Intl.NumberFormat('es-AR').format(num);
-};
-
-/**
- * Calcula los días entre dos fechas
- * @param {Date|string} date1 - Primera fecha
- * @param {Date|string} date2 - Segunda fecha
- * @returns {number} Días de diferencia
- */
-export const getDaysBetween = (date1, date2) => {
-  const d1 = new Date(date1);
-  const d2 = new Date(date2);
-  const diffTime = Math.abs(d2 - d1);
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  if (diffInSeconds < 60) return 'Hace un momento';
+  if (diffInSeconds < 3600) return `Hace ${Math.floor(diffInSeconds / 60)} minutos`;
+  if (diffInSeconds < 86400) return `Hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  if (diffInSeconds < 604800) return `Hace ${Math.floor(diffInSeconds / 86400)} días`;
+  if (diffInSeconds < 2592000) return `Hace ${Math.floor(diffInSeconds / 604800)} semanas`;
+  if (diffInSeconds < 31536000) return `Hace ${Math.floor(diffInSeconds / 2592000)} meses`;
+  return `Hace ${Math.floor(diffInSeconds / 31536000)} años`;
 };
 
 export default {
+  convertImageToBase64,
   convertBase64ToImage,
+  formatCurrency,
   formatDate,
-  formatTime,
-  formatDateTime,
-  getRelativeTime,
-  formatPhoneNumber,
-  formatCUIT,
+  formatPhone,
   truncateText,
-  formatPrice,
-  capitalize,
-  formatFullName,
-  isValidEmail,
-  isValidCUIT,
+  formatTime,
   getInitials,
-  formatNumber,
-  getDaysBetween,
+  getTimeAgo,
 };

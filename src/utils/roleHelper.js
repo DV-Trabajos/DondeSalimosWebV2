@@ -5,9 +5,9 @@
  * IDs de roles en el sistema
  */
 export const ROLES = {
-  USUARIO_COMUN: 1,
-  USUARIO_COMERCIO: 2,
-  ADMINISTRADOR: 3,
+  ADMINISTRADOR: 2,
+  USUARIO_COMERCIO: 3,
+  USUARIO_COMUN: 16,
 };
 
 /**
@@ -23,27 +23,27 @@ const ROLE_DESCRIPTIONS = {
  * Descripciones detalladas de roles
  */
 const ROLE_DETAILED_DESCRIPTIONS = {
-  1: 'Puede hacer reservas y dejar reseñas en comercios',
-  2: 'Puede gestionar comercios, ver reservas y reseñas recibidas',
-  3: 'Acceso completo al sistema y panel de administración',
+  2: 'Acceso completo al sistema y panel de administración',
+  3: 'Puede gestionar comercios, ver reservas y reseñas recibidas',
+  16: 'Puede hacer reservas y dejar reseñas en comercios',
 };
 
 /**
  * Colores para cada rol (para badges)
  */
 const ROLE_COLORS = {
-  1: 'blue',   // Usuario común
-  2: 'purple', // Dueño de comercio
-  3: 'red',    // Administrador
+  2: 'red',    // Administrador
+  3: 'purple', // Dueño de comercio
+  16: 'blue',   // Usuario común  
 };
 
 /**
  * Íconos para cada rol (emoji)
  */
 const ROLE_ICONS = {
-  1: '👤', // Usuario común
-  2: '🏪', // Dueño de comercio
-  3: '👑', // Administrador
+  2: '👑', // Administrador
+  3: '🏪', // Dueño de comercio
+  16: '👤', // Usuario común
 };
 
 /**
@@ -206,9 +206,10 @@ export const canMakeResenias = (roleId) => {
  */
 export const getRoleSlug = (roleId) => {
   const slugs = {
-    1: 'user',
-    2: 'business',
-    3: 'admin'
+    2: 'admin',
+    3: 'business',
+    16: 'user',   
+
   };
   return slugs[roleId] || 'unknown';
 };
