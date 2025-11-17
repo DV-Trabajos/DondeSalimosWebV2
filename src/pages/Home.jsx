@@ -235,39 +235,6 @@ const Home = () => {
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         {/* Info de ubicación y controles */}
         <div className="mb-6">
-          {/* Barra de ubicación */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <div className="flex items-start gap-3">
-              <MapPin className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
-              <div className="flex-1">
-                <h3 className="font-semibold text-blue-900 mb-1">
-                  Tu Ubicación
-                </h3>
-                {locationLoading ? (
-                  <div className="flex items-center gap-2 text-blue-700">
-                    <Loader className="w-4 h-4 animate-spin" />
-                    <span className="text-sm">Obteniendo ubicación...</span>
-                  </div>
-                ) : locationError ? (
-                  <div className="text-red-600 text-sm">
-                    <p>{locationError}</p>
-                    <button
-                      onClick={requestLocation}
-                      className="text-blue-600 hover:underline mt-1"
-                    >
-                      Intentar de nuevo
-                    </button>
-                  </div>
-                ) : location ? (
-                  <p className="text-blue-700 text-sm">
-                    Lat: {location.latitude.toFixed(6)}, Lng: {location.longitude.toFixed(6)}
-                  </p>
-                ) : (
-                  <p className="text-gray-600 text-sm">No disponible</p>
-                )}
-              </div>
-            </div>
-          </div>
 
           {/* Título y controles */}
           <div className="flex items-center justify-between">
