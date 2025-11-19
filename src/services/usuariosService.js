@@ -78,6 +78,28 @@ export const desactivarUsuario = async (id) => {
 };
 
 /**
+ * Cambia el estado de un usuario (activar o desactivar)
+ * PUT: /api/usuarios/cambiarEstado/{id}
+ * 
+ * @param {number} id - ID del usuario
+ * @param {boolean} estado - true para activar, false para desactivar
+ * @returns {Promise} Respuesta de la API
+ */
+export const cambiarEstadoUsuario = async (id, estado) => {
+  try {
+    console.log(`🔄 Cambiando estado de usuario ${id} a: ${estado}`);
+    const response = await api.put(`/api/Usuarios/cambiarEstado/${id}`, { 
+      estado: estado 
+    });
+    console.log('✅ Estado cambiado correctamente');
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error cambiando estado:', error);
+    throw error;
+  }
+};
+
+/**
  * Elimina permanentemente un usuario y todas sus relaciones
  * DELETE: /api/usuarios/eliminar/{id}
  * 

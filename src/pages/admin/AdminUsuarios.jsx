@@ -1,6 +1,6 @@
-// AdminUsuarios.jsx - Gestión de usuarios con opción de desactivar
-// Ruta: src/pages/admin/AdminUsuarios.jsx
-// ACTUALIZADO: Agregada funcionalidad de desactivar usuarios
+// AdminUsuarios.jsx - Gestión de usuarios con modales personalizados
+// Ruta: src/pages/admin/AdminUsuarios.jsx  
+// ACTUALIZADO: Reemplazados TODOS los alert() y confirm() con modales personalizados
 
 import { useState, useEffect } from 'react';
 import { 
@@ -17,8 +17,10 @@ import {
   getAllUsuarios,
   actualizarUsuario,
   eliminarUsuario,
-  desactivarUsuario, // ⭐ NUEVO
+  desactivarUsuario,
+  cambiarEstadoUsuario
 } from '../../services/usuariosService';
+import { ConfirmationModal, NotificationModal } from '../../components/Modals';
 
 const AdminUsuarios = () => {
   const navigate = useNavigate();
@@ -35,6 +37,25 @@ const AdminUsuarios = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [editData, setEditData] = useState({ iD_RolUsuario: 1 });
+  
+  // ⭐ NUEVOS ESTADOS PARA MODALES PERSONALIZADOS
+  const [confirmModal, setConfirmModal] = useState({
+    show: false,
+    type: 'warning',
+    title: '',
+    message: '',
+    description: '',
+    confirmText: 'Confirmar',
+    cancelText: 'Cancelar',
+    onConfirm: null,
+  });
+
+  const [notificationModal, setNotificationModal] = useState({
+    show: false,
+    type: 'info',
+    title: '',
+    message: '',
+  });
   
   // Estadísticas
   const [stats, setStats] = useState({
@@ -60,7 +81,7 @@ const AdminUsuarios = () => {
       calcularStats(data);
     } catch (error) {
       console.error('Error cargando usuarios:', error);
-      alert('Error al cargar usuarios');
+      showNotification('error', 'Error', 'No se pudieron cargar los usuarios');
     } finally {
       setLoading(false);
     }
@@ -83,20 +104,17 @@ const AdminUsuarios = () => {
   const applyFilters = () => {
     let filtered = [...usuarios];
 
-    // Filtro por rol
     if (filterRole !== 'todos') {
       const roleId = parseInt(filterRole);
       filtered = filtered.filter(u => u.iD_RolUsuario === roleId);
     }
 
-    // Filtro por estado
     if (filterEstado === 'activos') {
       filtered = filtered.filter(u => u.estado === true);
     } else if (filterEstado === 'inactivos') {
       filtered = filtered.filter(u => u.estado === false);
     }
 
-    // Búsqueda por texto
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(u => 
@@ -106,6 +124,40 @@ const AdminUsuarios = () => {
     }
 
     setFilteredUsuarios(filtered);
+  };
+
+  // ============================================
+  // FUNCIONES HELPER PARA MODALES
+  // ============================================
+
+  const showNotification = (type, title, message) => {
+    setNotificationModal({
+      show: true,
+      type,
+      title,
+      message,
+    });
+  };
+
+  const showConfirmation = (type, title, message, description, confirmText, onConfirm) => {
+    setConfirmModal({
+      show: true,
+      type,
+      title,
+      message,
+      description,
+      confirmText,
+      cancelText: 'Cancelar',
+      onConfirm,
+    });
+  };
+
+  const closeConfirmModal = () => {
+    setConfirmModal({ ...confirmModal, show: false });
+  };
+
+  const closeNotificationModal = () => {
+    setNotificationModal({ ...notificationModal, show: false });
   };
 
   // ============================================
@@ -126,117 +178,100 @@ const AdminUsuarios = () => {
       };
       
       await actualizarUsuario(selectedUser.iD_Usuario, updatedUser);
-      alert('✅ Usuario actualizado correctamente');
+      showNotification('success', 'Usuario actualizado', 'El rol del usuario fue actualizado correctamente');
       setShowEditModal(false);
       setSelectedUser(null);
       loadUsuarios();
     } catch (error) {
       console.error('Error actualizando usuario:', error);
-      alert('❌ Error al actualizar usuario');
+      showNotification('error', 'Error', 'No se pudo actualizar el usuario');
     }
   };
 
-  /**
-   * ⭐ NUEVA FUNCIÓN: Desactivar usuario
-   * Cambia el estado a false sin eliminar el usuario
-   */
-  const handleDesactivar = async (usuario) => {
-    // Validaciones
+  const handleDesactivar = (usuario) => {
     if (usuario.iD_Usuario === currentUser?.iD_Usuario) {
-      alert('⚠️ No puedes desactivar tu propia cuenta');
+      showNotification('warning', 'Acción no permitida', 'No puedes desactivar tu propia cuenta');
       return;
     }
 
     if (usuario.estado === false) {
-      alert('ℹ️ Este usuario ya está desactivado');
+      showNotification('info', 'Usuario ya inactivo', 'Este usuario ya está desactivado');
       return;
     }
 
-    const confirmMsg = `¿Desactivar al usuario "${usuario.nombreUsuario}"?\n\n` +
-                      `El usuario NO será eliminado, pero:\n` +
-                      `• No podrá iniciar sesión\n` +
-                      `• Sus datos se mantendrán en el sistema\n` +
-                      `• Puedes reactivarlo más tarde actualizando su estado`;
-
-    if (!confirm(confirmMsg)) return;
-
-    try {
-      await desactivarUsuario(usuario.iD_Usuario);
-      alert('✅ Usuario desactivado correctamente');
-      loadUsuarios();
-    } catch (error) {
-      console.error('Error desactivando usuario:', error);
-      alert('❌ Error al desactivar usuario: ' + (error.response?.data?.message || error.message));
-    }
-  };
-
-  /**
-   * Reactivar usuario (cambiar estado a true mediante actualización)
-   */
-  const handleReactivar = async (usuario) => {
-    const confirmMsg = `¿Reactivar al usuario "${usuario.nombreUsuario}"?\n\n` +
-                      `El usuario podrá volver a iniciar sesión`;
-
-    if (!confirm(confirmMsg)) return;
-
-    try {
-      const updatedUser = { ...usuario, estado: true };
-      await actualizarUsuario(usuario.iD_Usuario, updatedUser);
-      alert('✅ Usuario reactivado correctamente');
-      loadUsuarios();
-    } catch (error) {
-      console.error('Error reactivando usuario:', error);
-      alert('❌ Error al reactivar usuario');
-    }
-  };
-
-  /**
-   * Eliminar permanentemente un usuario
-   */
-  const handleDelete = async (usuario) => {
-    // Validaciones
-    if (usuario.iD_Usuario === currentUser?.iD_Usuario) {
-      alert('⚠️ No puedes eliminar tu propia cuenta');
-      return;
-    }
-
-    const confirmMsg = `⚠️ ¿ELIMINAR PERMANENTEMENTE a "${usuario.nombreUsuario}"?\n\n` +
-                      `ESTA ACCIÓN NO SE PUEDE DESHACER.\n\n` +
-                      `Se eliminarán:\n` +
-                      `• El usuario de Firebase\n` +
-                      `• El usuario de la base de datos\n` +
-                      `• Todas sus reseñas\n` +
-                      `• Todas sus reservas\n` +
-                      `• Todos sus comercios (si tiene)\n` +
-                      `• Todas las publicidades de sus comercios\n\n` +
-                      `💡 Recomendación: Si solo quieres impedir que inicie sesión,\n` +
-                      `es mejor usar "Desactivar" en lugar de eliminar.`;
-
-    if (!confirm(confirmMsg)) return;
-
-    // Segunda confirmación para acción crítica
-    const segundaConfirmacion = prompt(
-      `Para confirmar la eliminación permanente, escribe el nombre del usuario: "${usuario.nombreUsuario}"`
+    showConfirmation(
+      'warning',
+      '¿Desactivar usuario?',
+      `¿Estás seguro de desactivar a "${usuario.nombreUsuario}"?`,
+      'El usuario NO será eliminado, pero no podrá iniciar sesión. Sus datos se mantendrán y podrás reactivarlo más tarde.',
+      'Sí, desactivar',
+      async () => {
+        try {
+          await cambiarEstadoUsuario(usuario.iD_Usuario, false);
+          showNotification('success', 'Usuario desactivado', 'El usuario fue desactivado correctamente');
+          loadUsuarios();
+        } catch (error) {
+          console.error('Error desactivando usuario:', error);
+          showNotification('error', 'Error', error.response?.data?.message || 'No se pudo desactivar el usuario');
+        }
+      }
     );
+  };
 
-    if (segundaConfirmacion !== usuario.nombreUsuario) {
-      alert('❌ Eliminación cancelada: El nombre no coincide');
+  const handleReactivar = (usuario) => {
+    showConfirmation(
+      'success',
+      '¿Reactivar usuario?',
+      `¿Reactivar a "${usuario.nombreUsuario}"?`,
+      'El usuario podrá volver a iniciar sesión normalmente.',
+      'Sí, reactivar',
+      async () => {
+        try {
+          await cambiarEstadoUsuario(usuario.iD_Usuario, true);
+          showNotification('success', 'Usuario reactivado', 'El usuario fue reactivado correctamente');
+          loadUsuarios();
+        } catch (error) {
+          console.error('Error reactivando usuario:', error);
+          showNotification('error', 'Error', 'No se pudo reactivar el usuario');
+        }
+      }
+    );
+  };
+
+  const handleDelete = (usuario) => {
+    if (usuario.iD_Usuario === currentUser?.iD_Usuario) {
+      showNotification('warning', 'Acción no permitida', 'No puedes eliminar tu propia cuenta');
       return;
     }
 
+    showConfirmation(
+      'danger',
+      '⚠️ ¿ELIMINAR PERMANENTEMENTE?',
+      `¿Estás seguro de eliminar a "${usuario.nombreUsuario}"?`,
+      'ESTA ACCIÓN NO SE PUEDE DESHACER.',
+      'Sí, eliminar',
+      () => {
+        const nombreIngresado = prompt(`Para confirmar, escribe el nombre del usuario: "${usuario.nombreUsuario}"`);
+        
+        if (nombreIngresado === usuario.nombreUsuario) {
+          eliminarUsuarioConfirmado(usuario);
+        } else if (nombreIngresado !== null) {
+          showNotification('error', 'Eliminación cancelada', 'El nombre ingresado no coincide');
+        }
+      }
+    );
+  };
+
+  const eliminarUsuarioConfirmado = async (usuario) => {
     try {
       await eliminarUsuario(usuario.iD_Usuario);
-      alert('✅ Usuario eliminado permanentemente');
+      showNotification('success', 'Usuario eliminado', 'El usuario fue eliminado permanentemente');
       loadUsuarios();
     } catch (error) {
       console.error('Error eliminando usuario:', error);
-      alert('❌ Error al eliminar usuario: ' + (error.response?.data?.message || error.message));
+      showNotification('error', 'Error', error.response?.data?.message || 'No se pudo eliminar el usuario');
     }
   };
-
-  // ============================================
-  // UTILIDADES DE RENDERIZADO
-  // ============================================
 
   const getRoleBadge = (rolId) => {
     const roles = {
@@ -283,7 +318,7 @@ const AdminUsuarios = () => {
   };
 
   // ============================================
-  // RENDERIZADO
+  // RENDER
   // ============================================
 
   if (loading) {
@@ -334,6 +369,18 @@ const AdminUsuarios = () => {
         {/* Filtros */}
         <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
           <div className="space-y-4">
+            {/* Búsqueda */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre o email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
+              />
+            </div>
+
             {/* Filtros por rol */}
             <div>
               <label className="text-sm font-semibold text-gray-700 mb-2 block">
@@ -395,7 +442,7 @@ const AdminUsuarios = () => {
                     filterEstado === 'activos' ? 'bg-green-500 text-white' : 'bg-gray-100 hover:bg-gray-200'
                   }`}
                 >
-                  Activos ({stats.activos})
+                  Activos
                 </button>
                 <button
                   onClick={() => setFilterEstado('inactivos')}
@@ -403,130 +450,111 @@ const AdminUsuarios = () => {
                     filterEstado === 'inactivos' ? 'bg-red-500 text-white' : 'bg-gray-100 hover:bg-gray-200'
                   }`}
                 >
-                  Inactivos ({stats.inactivos})
+                  Inactivos
                 </button>
               </div>
-            </div>
-
-            {/* Barra de búsqueda */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar por nombre o email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
             </div>
           </div>
         </div>
 
-        {/* Lista de usuarios */}
-        {filteredUsuarios.length === 0 ? (
-          <div className="bg-white rounded-xl p-12 text-center">
-            <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600">No se encontraron usuarios con los filtros aplicados</p>
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                      Usuario
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                      Rol
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                      Estado
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                      Fecha Creación
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {filteredUsuarios.map(usuario => (
-                    <tr key={usuario.iD_Usuario} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4">
-                        <div>
-                          <div className="font-semibold text-gray-900 flex items-center gap-2">
-                            <User className="w-4 h-4 text-gray-400" />
-                            {usuario.nombreUsuario}
-                          </div>
-                          <div className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-                            <Mail className="w-3 h-3" />
-                            {usuario.correo}
-                          </div>
+        {/* Tabla de usuarios */}
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Usuario
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Rol
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Estado
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Fecha Registro
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {filteredUsuarios.map(usuario => (
+                  <tr key={usuario.iD_Usuario} className="hover:bg-gray-50 transition">
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="font-semibold text-gray-900 flex items-center gap-2">
+                          <User className="w-4 h-4 text-gray-400" />
+                          {usuario.nombreUsuario}
                         </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {getRoleBadge(usuario.iD_RolUsuario)}
-                      </td>
-                      <td className="px-6 py-4">
-                        {getEstadoBadge(usuario.estado)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {formatDate(usuario.fechaCreacion)}
+                        <div className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                          <Mail className="w-3 h-3" />
+                          {usuario.correo}
                         </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          {/* Botón Editar */}
-                          <button
-                            onClick={() => handleEdit(usuario)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                            title="Editar rol"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {getRoleBadge(usuario.iD_RolUsuario)}
+                    </td>
+                    <td className="px-6 py-4">
+                      {getEstadoBadge(usuario.estado)}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {formatDate(usuario.fechaCreacion)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-2">
+                        {/* Botón Editar */}
+                        <button
+                          onClick={() => handleEdit(usuario)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                          title="Editar rol"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
 
-                          {/* Botón Desactivar/Reactivar */}
-                          {usuario.estado ? (
-                            <button
-                              onClick={() => handleDesactivar(usuario)}
-                              className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition"
-                              title="Desactivar usuario"
-                              disabled={usuario.iD_Usuario === currentUser?.iD_Usuario}
-                            >
-                              <Ban className="w-4 h-4" />
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleReactivar(usuario)}
-                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
-                              title="Reactivar usuario"
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                            </button>
-                          )}
-
-                          {/* Botón Eliminar */}
+                        {/* Botón Desactivar/Reactivar */}
+                        {usuario.estado ? (
                           <button
-                            onClick={() => handleDelete(usuario)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                            title="Eliminar permanentemente"
+                            onClick={() => handleDesactivar(usuario)}
+                            className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition"
+                            title="Desactivar usuario"
                             disabled={usuario.iD_Usuario === currentUser?.iD_Usuario}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Ban className="w-4 h-4" />
                           </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        ) : (
+                          <button
+                            onClick={() => handleReactivar(usuario)}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
+                            title="Reactivar usuario"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                          </button>
+                        )}
+
+                        {/* Botón Eliminar */}
+                        <button
+                          onClick={() => handleDelete(usuario)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                          title="Eliminar permanentemente"
+                          disabled={usuario.iD_Usuario === currentUser?.iD_Usuario}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
+        </div>
 
         {/* Modal de Edición */}
         {showEditModal && selectedUser && (
@@ -592,6 +620,27 @@ const AdminUsuarios = () => {
             </div>
           </div>
         )}
+
+        {/* ⭐ MODALES PERSONALIZADOS */}
+        <ConfirmationModal
+          isOpen={confirmModal.show}
+          onClose={closeConfirmModal}
+          onConfirm={confirmModal.onConfirm}
+          title={confirmModal.title}
+          message={confirmModal.message}
+          description={confirmModal.description}
+          confirmText={confirmModal.confirmText}
+          cancelText={confirmModal.cancelText}
+          type={confirmModal.type}
+        />
+
+        <NotificationModal
+          isOpen={notificationModal.show}
+          onClose={closeNotificationModal}
+          title={notificationModal.title}
+          message={notificationModal.message}
+          type={notificationModal.type}
+        />
 
         {/* Info Box */}
         <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">

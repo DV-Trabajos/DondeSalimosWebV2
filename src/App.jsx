@@ -8,6 +8,7 @@ import { LocationProvider } from './context/LocationContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { useAuth } from './hooks/useAuth';
 import ToastContainer from './components/Notifications/ToastContainer';
+import './components/Modals/modals.css';
 
 // Páginas públicas
 import Login from './pages/Login';
