@@ -17,10 +17,9 @@ import {
   getAllUsuarios,
   actualizarUsuario,
   eliminarUsuario,
-  desactivarUsuario,
-  cambiarEstadoUsuario
+  cambiarEstadoUsuario,
 } from '../../services/usuariosService';
-import { ConfirmationModal, NotificationModal } from '../../components/Modals';
+import { ConfirmationModal, NotificationModal, InputModal } from '../../components/Modals';
 
 const AdminUsuarios = () => {
   const navigate = useNavigate();
@@ -55,6 +54,16 @@ const AdminUsuarios = () => {
     type: 'info',
     title: '',
     message: '',
+  });
+
+  // ⭐ NUEVO: Estado para InputModal
+  const [inputModal, setInputModal] = useState({
+    show: false,
+    title: '',
+    message: '',
+    placeholder: '',
+    expectedValue: '',
+    onConfirm: null,
   });
   
   // Estadísticas
@@ -160,6 +169,21 @@ const AdminUsuarios = () => {
     setNotificationModal({ ...notificationModal, show: false });
   };
 
+  const showInputModal = (title, message, placeholder, expectedValue, onConfirm) => {
+    setInputModal({
+      show: true,
+      title,
+      message,
+      placeholder,
+      expectedValue,
+      onConfirm,
+    });
+  };
+
+  const closeInputModal = () => {
+    setInputModal({ ...inputModal, show: false });
+  };
+
   // ============================================
   // ACCIONES DE USUARIOS
   // ============================================
@@ -249,15 +273,18 @@ const AdminUsuarios = () => {
       '⚠️ ¿ELIMINAR PERMANENTEMENTE?',
       `¿Estás seguro de eliminar a "${usuario.nombreUsuario}"?`,
       'ESTA ACCIÓN NO SE PUEDE DESHACER.',
-      'Sí, eliminar',
+      'Continuar',
       () => {
-        const nombreIngresado = prompt(`Para confirmar, escribe el nombre del usuario: "${usuario.nombreUsuario}"`);
-        
-        if (nombreIngresado === usuario.nombreUsuario) {
-          eliminarUsuarioConfirmado(usuario);
-        } else if (nombreIngresado !== null) {
-          showNotification('error', 'Eliminación cancelada', 'El nombre ingresado no coincide');
-        }
+        // Segunda confirmación con InputModal
+        showInputModal(
+          'Confirmación Final',
+          'Para confirmar la eliminación permanente, escribe el nombre del usuario:',
+          'Escribe el nombre del usuario',
+          usuario.nombreUsuario,
+          () => {
+            eliminarUsuarioConfirmado(usuario);
+          }
+        );
       }
     );
   };
@@ -640,6 +667,19 @@ const AdminUsuarios = () => {
           title={notificationModal.title}
           message={notificationModal.message}
           type={notificationModal.type}
+        />
+
+        {/* ⭐ NUEVO: InputModal para confirmación de eliminación */}
+        <InputModal
+          isOpen={inputModal.show}
+          onClose={closeInputModal}
+          onConfirm={inputModal.onConfirm}
+          title={inputModal.title}
+          message={inputModal.message}
+          placeholder={inputModal.placeholder}
+          expectedValue={inputModal.expectedValue}
+          confirmText="Sí, eliminar"
+          cancelText="Cancelar"
         />
 
         {/* Info Box */}
