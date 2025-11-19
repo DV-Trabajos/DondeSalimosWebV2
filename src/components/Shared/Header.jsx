@@ -1,6 +1,6 @@
 // Header.jsx - Header con navegación completa y notificaciones
 // Ruta: src/components/Shared/Header.jsx
-// Incluye menús para Usuario, Comercio, Admin + Campanita de notificaciones
+// ✅ PARTE 2: Versión mejorada con navegación unificada de reservas
 
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -45,6 +45,15 @@ const Header = () => {
   const displayName = user?.nombreUsuario || user?.nombre || 'Usuario';
   const initials = displayName.charAt(0).toUpperCase();
 
+  // ✅ NUEVO: Función para navegar a "Reservas Recibidas"
+  const handleReservasRecibidasClick = (e) => {
+    e.preventDefault();
+    navigate('/mis-reservas', { 
+      state: { activeTab: 'reservas-recibidas' } 
+    });
+    setMobileMenuOpen(false);
+  };
+
   return (
     <header className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -85,6 +94,17 @@ const Header = () => {
                     >
                       Mis Comercios
                     </NavLink>
+
+                    {/* ✅ NUEVO: Link directo a Reservas Recibidas */}
+                    <NavLink 
+                      to="/mis-reservas"
+                      active={isActive('/mis-reservas')} 
+                      icon={<Calendar className="w-4 h-4" />}
+                      onClick={handleReservasRecibidasClick}
+                    >
+                      Reservas Recibidas
+                    </NavLink>
+
                     <NavLink 
                       to="/mis-publicidades" 
                       active={isActive('/mis-publicidades')} 
@@ -150,18 +170,11 @@ const Header = () => {
                         Mi Perfil
                       </Link>
 
-                      <Link
-                        to="/mis-reservas"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 transition"
-                      >
-                        <Calendar className="w-4 h-4" />
-                        Mis Reservas
-                      </Link>
-
+                      {/* Opciones adicionales de comercio en dropdown */}
                       {(isComercio || isAdmin) && (
                         <>
                           <div className="border-t border-gray-100 my-1"></div>
+                          <p className="px-4 py-1 text-xs font-semibold text-gray-500 uppercase">Gestión</p>
                           <Link
                             to="/mis-comercios"
                             onClick={() => setUserMenuOpen(false)}
@@ -171,12 +184,12 @@ const Header = () => {
                             Mis Comercios
                           </Link>
                           <Link
-                            to="/reservas-recibidas"
+                            to="/mis-publicidades"
                             onClick={() => setUserMenuOpen(false)}
                             className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 transition"
                           >
-                            <Calendar className="w-4 h-4" />
-                            Reservas Recibidas
+                            <Megaphone className="w-4 h-4" />
+                            Publicidades
                           </Link>
                         </>
                       )}
@@ -187,7 +200,7 @@ const Header = () => {
                           <Link
                             to="/admin"
                             onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center gap-2 px-4 py-2 text-purple-700 hover:bg-purple-50 transition font-medium"
+                            className="flex items-center gap-2 px-4 py-2 text-purple-600 hover:bg-purple-50 transition"
                           >
                             <LayoutDashboard className="w-4 h-4" />
                             Panel de Admin
@@ -250,9 +263,16 @@ const Header = () => {
                       <MobileNavLink to="/mis-comercios" icon={<Store className="w-5 h-5" />} onClick={() => setMobileMenuOpen(false)}>
                         Mis Comercios
                       </MobileNavLink>
-                      <MobileNavLink to="/reservas-recibidas" icon={<Calendar className="w-5 h-5" />} onClick={() => setMobileMenuOpen(false)}>
+
+                      {/* ✅ NUEVO: Link móvil a Reservas Recibidas */}
+                      <MobileNavLink 
+                        to="/mis-reservas" 
+                        icon={<Calendar className="w-5 h-5" />} 
+                        onClick={handleReservasRecibidasClick}
+                      >
                         Reservas Recibidas
                       </MobileNavLink>
+
                       <MobileNavLink to="/mis-publicidades" icon={<Megaphone className="w-5 h-5" />} onClick={() => setMobileMenuOpen(false)}>
                         Publicidades
                       </MobileNavLink>
@@ -300,35 +320,71 @@ const Header = () => {
   );
 };
 
-// Componente de enlace de navegación desktop
-const NavLink = ({ to, active, icon, children, highlight }) => (
-  <Link
-    to={to}
-    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
-      active
-        ? highlight
-          ? 'bg-purple-100 text-purple-700'
-          : 'bg-primary/10 text-primary'
-        : highlight
-        ? 'text-purple-600 hover:bg-purple-50'
-        : 'text-gray-600 hover:bg-gray-100'
-    }`}
-  >
-    {icon}
-    {children}
-  </Link>
-);
+// ✅ MEJORADO: Componente de enlace de navegación desktop con soporte para onClick
+const NavLink = ({ to, active, icon, children, highlight, onClick }) => {
+  if (onClick) {
+    return (
+      <button
+        onClick={onClick}
+        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+          active
+            ? highlight
+              ? 'bg-purple-100 text-purple-700'
+              : 'bg-primary/10 text-primary'
+            : highlight
+            ? 'text-purple-600 hover:bg-purple-50'
+            : 'text-gray-600 hover:bg-gray-100'
+        }`}
+      >
+        {icon}
+        {children}
+      </button>
+    );
+  }
 
-// Componente de enlace móvil
-const MobileNavLink = ({ to, icon, children, onClick }) => (
-  <Link
-    to={to}
-    onClick={onClick}
-    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg"
-  >
-    {icon}
-    {children}
-  </Link>
-);
+  return (
+    <Link
+      to={to}
+      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+        active
+          ? highlight
+            ? 'bg-purple-100 text-purple-700'
+            : 'bg-primary/10 text-primary'
+          : highlight
+          ? 'text-purple-600 hover:bg-purple-50'
+          : 'text-gray-600 hover:bg-gray-100'
+      }`}
+    >
+      {icon}
+      {children}
+    </Link>
+  );
+};
+
+// ✅ MEJORADO: Componente de enlace móvil con soporte para onClick
+const MobileNavLink = ({ to, icon, children, onClick }) => {
+  if (onClick && onClick.toString().includes('handleReservasRecibidasClick')) {
+    return (
+      <button
+        onClick={onClick}
+        className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg w-full text-left"
+      >
+        {icon}
+        {children}
+      </button>
+    );
+  }
+
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg"
+    >
+      {icon}
+      {children}
+    </Link>
+  );
+};
 
 export default Header;

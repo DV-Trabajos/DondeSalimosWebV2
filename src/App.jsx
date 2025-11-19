@@ -1,6 +1,6 @@
 // App.jsx - Configuración completa de rutas
 // Ruta: src/App.jsx
-// Incluye todas las rutas + Notificaciones + Payment Callback
+// ✅ ACTUALIZADO: Unificación de componentes de Reservas
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -16,11 +16,10 @@ import Home from './pages/Home';
 
 // Páginas de usuario autenticado
 import Profile from './pages/Profile';
-import MisReservas from './pages/MisReservas';
+import MisReservas from './pages/MisReservas'; // ✅ Este ahora usa el componente unificado
 
 // Páginas de dueño de comercio (rol 3)
 import BarManagement from './pages/BarManagement';
-import ReservasRecibidas from './pages/ReservasRecibidas';
 import MisPublicidades from './pages/MisPublicidades';
 
 // Páginas de administrador (rol 2)
@@ -60,6 +59,7 @@ const ProtectedRoute = ({ children }) => {
 
 /**
  * Ruta para dueños de comercio (rol 3)
+ * Nota: Los administradores (rol 2) también tienen acceso
  */
 const ComercioRoute = ({ children }) => {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -131,7 +131,7 @@ const PublicRoute = ({ children }) => {
 };
 
 // ============================================
-// APP PRINCIPAL
+// APP PRINCIPAL - RUTAS
 // ============================================
 
 const AppRoutes = () => {
@@ -160,6 +160,7 @@ const AppRoutes = () => {
         } 
       />
       
+      {/* ✅ RUTA UNIFICADA DE RESERVAS - Se adapta automáticamente según el rol */}
       <Route 
         path="/mis-reservas" 
         element={
@@ -179,23 +180,8 @@ const AppRoutes = () => {
         } 
       />
       
-      <Route 
-        path="/reservas-recibidas" 
-        element={
-          <ComercioRoute>
-            <ReservasRecibidas />
-          </ComercioRoute>
-        } 
-      />
-      
-      <Route 
-        path="/reservas-recibidas/:comercioId" 
-        element={
-          <ComercioRoute>
-            <ReservasRecibidas />
-          </ComercioRoute>
-        } 
-      />
+      {/* ✅ ELIMINADO: /reservas-recibidas - Ahora es un tab dentro de /mis-reservas */}
+      {/* Los dueños de comercio verán el tab "Reservas Recibidas" automáticamente */}
       
       <Route 
         path="/mis-publicidades" 
