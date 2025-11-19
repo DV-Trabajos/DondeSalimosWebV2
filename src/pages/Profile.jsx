@@ -24,7 +24,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import Header from '../components/Shared/Header';
 import { getRoleDescriptionById } from '../utils/roleHelper';
-import { updateUser, deleteUser } from '../services/usuariosService';
+import { actualizarUsuario, eliminarUsuario } from '../services/usuariosService';
 import { getReservasByUser } from '../services/reservasService';
 import { getAllResenias } from '../services/reseniasService';
 import { getComerciosByUsuario } from '../services/comerciosService';
@@ -151,7 +151,7 @@ const Profile = () => {
         telefono: editedData.telefono || null,
       };
 
-      await updateUser(user.iD_Usuario, updatedUser);
+      await actualizarUsuario(user.iD_Usuario, updatedUser);
       
       // Actualizar contexto
       if (updateUserData) {
@@ -188,7 +188,7 @@ const Profile = () => {
     if (!confirmacionFinal) return;
 
     try {
-      await deleteUser(user.iD_Usuario);
+      await eliminarUsuario(user.iD_Usuario);
       alert('Tu cuenta ha sido eliminada exitosamente.');
       logout();
       navigate('/');

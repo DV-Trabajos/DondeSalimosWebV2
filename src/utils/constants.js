@@ -1,7 +1,7 @@
 // constants.js - Constantes del proyecto ACTUALIZADO
 
 // API Base URL
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7283';
 
 // Google
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -47,11 +47,6 @@ export const TIPOS_COMERCIO = {
 export const TIPOS_COMERCIO_DESCRIPCION = {
   1: 'Bar',
   2: 'Boliche/Club',
-  3: 'Restaurante',
-  4: 'Café',
-  5: 'Discoteca',
-  6: 'Pub',
-  7: 'Otro',
 };
 
 // ✅ NUEVO - Constantes de filtros compartidas entre componentes
@@ -59,10 +54,6 @@ export const TIPOS_COMERCIO_FILTER = [
   { id: 'all', label: 'Todos', icon: '🏪' },
   { id: '1', label: 'Bares', icon: '🍺' },
   { id: '2', label: 'Boliches', icon: '🎉' },
-  { id: '3', label: 'Restaurantes', icon: '🍽️' },
-  { id: '4', label: 'Cafés', icon: '☕' },
-  { id: '5', label: 'Discotecas', icon: '💃' },
-  { id: '6', label: 'Pubs', icon: '🍻' },
 ];
 
 // Estados de Reserva

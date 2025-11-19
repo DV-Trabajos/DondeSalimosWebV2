@@ -1,11 +1,13 @@
 // App.jsx - Configuración completa de rutas
 // Ruta: src/App.jsx
-// Incluye todas las rutas de Fases 1-8
+// Incluye todas las rutas + Notificaciones + Payment Callback
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { LocationProvider } from './context/LocationContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { useAuth } from './hooks/useAuth';
+import ToastContainer from './components/Notifications/ToastContainer';
 
 // Páginas públicas
 import Login from './pages/Login';
@@ -27,6 +29,9 @@ import AdminPublicidades from './pages/admin/AdminPublicidades';
 import AdminUsuarios from './pages/admin/AdminUsuarios';
 import AdminResenias from './pages/admin/AdminResenias';
 
+// Páginas de pagos
+import PaymentCallback from './pages/PaymentCallback';
+
 // ============================================
 // COMPONENTES DE PROTECCIÓN DE RUTAS
 // ============================================
@@ -35,9 +40,9 @@ import AdminResenias from './pages/admin/AdminResenias';
  * Ruta protegida - requiere autenticación
  */
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -56,9 +61,9 @@ const ProtectedRoute = ({ children }) => {
  * Ruta para dueños de comercio (rol 3)
  */
 const ComercioRoute = ({ children }) => {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -82,9 +87,9 @@ const ComercioRoute = ({ children }) => {
  * Ruta para administradores (rol 2)
  */
 const AdminRoute = ({ children }) => {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -107,9 +112,9 @@ const AdminRoute = ({ children }) => {
  * Ruta pública - redirige si ya está autenticado
  */
 const PublicRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -246,6 +251,16 @@ const AppRoutes = () => {
         } 
       />
       
+      {/* ========== RUTA DE PAGO ========== */}
+      <Route 
+        path="/payment/callback" 
+        element={
+          <ProtectedRoute>
+            <PaymentCallback />
+          </ProtectedRoute>
+        } 
+      />
+      
       {/* ========== RUTA 404 ========== */}
       <Route 
         path="*" 
@@ -273,7 +288,10 @@ const App = () => {
     <Router>
       <AuthProvider>
         <LocationProvider>
-          <AppRoutes />
+          <NotificationProvider>
+            <AppRoutes />
+            <ToastContainer />
+          </NotificationProvider>
         </LocationProvider>
       </AuthProvider>
     </Router>

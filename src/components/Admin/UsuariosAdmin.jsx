@@ -1,7 +1,7 @@
 // UsuariosAdmin.jsx - Gestión de usuarios por administrador
 
 import { useState, useEffect } from 'react';
-import { getAllUsuarios, updateUser, deleteUser } from '../../services/usuariosService';
+import { getAllUsuarios, actualizarUsuario, eliminarUsuario } from '../../services/usuariosService';
 import { User, Mail, Shield, Trash2, Loader, Ban, CheckCircle } from 'lucide-react';
 import { getRoleDescriptionById } from '../../utils/roleHelper';
 
@@ -33,7 +33,7 @@ const UsuariosAdmin = () => {
     if (!confirm(`¿${accion.charAt(0).toUpperCase() + accion.slice(1)} al usuario "${usuario.nombreUsuario}"?`)) return;
 
     try {
-      await updateUser(usuario.iD_Usuario, { ...usuario, estado: nuevoEstado });
+      await actualizarUsuario(usuario.iD_Usuario, { ...usuario, estado: nuevoEstado });
       alert(`Usuario ${accion}do exitosamente`);
       loadUsuarios();
     } catch (error) {
@@ -46,7 +46,7 @@ const UsuariosAdmin = () => {
     if (!confirm(`¿ELIMINAR permanentemente a "${usuario.nombreUsuario}"? Esta acción no se puede deshacer.`)) return;
 
     try {
-      await deleteUser(usuario.iD_Usuario);
+      await eliminarUsuario(usuario.iD_Usuario);
       alert('Usuario eliminado');
       loadUsuarios();
     } catch (error) {

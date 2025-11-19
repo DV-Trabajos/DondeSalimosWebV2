@@ -18,12 +18,12 @@ export const getUsuarioById = async (id) => {
   return response.data;
 };
 
-export const updateUsuario = async (id, data) => {
+export const actualizarUsuario = async (id, data) => {
   const response = await api.put(`/api/Usuarios/actualizar/${id}`, data);
   return response.data;
 };
 
-export const deleteUsuario = async (id) => {
+export const eliminarUsuario = async (id) => {
   const response = await api.delete(`/api/Usuarios/eliminar/${id}`);
   return response.data;
 };
@@ -118,8 +118,8 @@ export const getAdminStats = async () => {
 export default {
   getAllUsuarios,
   getUsuarioById,
-  updateUsuario,
-  deleteUsuario,
+  actualizarUsuario,
+  eliminarUsuario,
   getAllComercios,
   aprobarComercio,
   rechazarComercio,

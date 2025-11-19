@@ -1,14 +1,15 @@
-// Header.jsx - Header con navegación completa según rol de usuario
+// Header.jsx - Header con navegación completa y notificaciones
 // Ruta: src/components/Shared/Header.jsx
-// Incluye menús para Usuario, Comercio y Admin
+// Incluye menús para Usuario, Comercio, Admin + Campanita de notificaciones
 
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Home, Calendar, User, LogOut, Menu, X, Store, 
-  Megaphone, LayoutDashboard, ChevronDown, Settings
+  Megaphone, LayoutDashboard, ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import NotificationPanel from '../Notifications/NotificationPanel';
 
 const Header = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -39,7 +40,6 @@ const Header = () => {
   // Determinar el rol del usuario
   const isAdmin = user?.iD_RolUsuario === 2;
   const isComercio = user?.iD_RolUsuario === 3;
-  const isUsuario = user?.iD_RolUsuario === 1;
 
   // Obtener nombre para mostrar
   const displayName = user?.nombreUsuario || user?.nombre || 'Usuario';
@@ -110,97 +110,103 @@ const Header = () => {
             )}
           </nav>
 
-          {/* Usuario / Login */}
+          {/* Usuario / Login / Notificaciones */}
           <div className="hidden md:flex items-center gap-3">
             {isAuthenticated ? (
-              <div className="relative" ref={userMenuRef}>
-                <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition"
-                >
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                    <span className="text-white font-semibold text-sm">{initials}</span>
-                  </div>
-                  <span className="font-medium text-gray-700">{displayName}</span>
-                  <ChevronDown className={`w-4 h-4 text-gray-500 transition ${userMenuOpen ? 'rotate-180' : ''}`} />
-                </button>
+              <>
+                {/* 🔔 CAMPANITA DE NOTIFICACIONES */}
+                <NotificationPanel />
 
-                {/* Dropdown Menu */}
-                {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
-                    <div className="px-4 py-2 border-b border-gray-100">
-                      <p className="text-sm font-semibold text-gray-900">{displayName}</p>
-                      <p className="text-xs text-gray-500">{user?.correo}</p>
-                      <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-xs font-semibold rounded">
-                        {isAdmin ? 'Administrador' : isComercio ? 'Comercio' : 'Usuario'}
-                      </span>
+                {/* Menú de usuario */}
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition"
+                  >
+                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                      <span className="text-white font-semibold text-sm">{initials}</span>
                     </div>
+                    <span className="font-medium text-gray-700">{displayName}</span>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition ${userMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
 
-                    <Link
-                      to="/profile"
-                      onClick={() => setUserMenuOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 transition"
-                    >
-                      <User className="w-4 h-4" />
-                      Mi Perfil
-                    </Link>
+                  {/* Dropdown Menu */}
+                  {userMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+                      <div className="px-4 py-2 border-b border-gray-100">
+                        <p className="text-sm font-semibold text-gray-900">{displayName}</p>
+                        <p className="text-xs text-gray-500">{user?.correo}</p>
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-xs font-semibold rounded">
+                          {isAdmin ? 'Administrador' : isComercio ? 'Comercio' : 'Usuario'}
+                        </span>
+                      </div>
 
-                    <Link
-                      to="/mis-reservas"
-                      onClick={() => setUserMenuOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 transition"
-                    >
-                      <Calendar className="w-4 h-4" />
-                      Mis Reservas
-                    </Link>
+                      <Link
+                        to="/profile"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 transition"
+                      >
+                        <User className="w-4 h-4" />
+                        Mi Perfil
+                      </Link>
 
-                    {(isComercio || isAdmin) && (
-                      <>
-                        <div className="border-t border-gray-100 my-1"></div>
-                        <Link
-                          to="/mis-comercios"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 transition"
-                        >
-                          <Store className="w-4 h-4" />
-                          Mis Comercios
-                        </Link>
-                        <Link
-                          to="/reservas-recibidas"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 transition"
-                        >
-                          <Calendar className="w-4 h-4" />
-                          Reservas Recibidas
-                        </Link>
-                      </>
-                    )}
+                      <Link
+                        to="/mis-reservas"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 transition"
+                      >
+                        <Calendar className="w-4 h-4" />
+                        Mis Reservas
+                      </Link>
 
-                    {isAdmin && (
-                      <>
-                        <div className="border-t border-gray-100 my-1"></div>
-                        <Link
-                          to="/admin"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2 text-purple-700 hover:bg-purple-50 transition font-medium"
-                        >
-                          <LayoutDashboard className="w-4 h-4" />
-                          Panel de Admin
-                        </Link>
-                      </>
-                    )}
+                      {(isComercio || isAdmin) && (
+                        <>
+                          <div className="border-t border-gray-100 my-1"></div>
+                          <Link
+                            to="/mis-comercios"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 transition"
+                          >
+                            <Store className="w-4 h-4" />
+                            Mis Comercios
+                          </Link>
+                          <Link
+                            to="/reservas-recibidas"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 transition"
+                          >
+                            <Calendar className="w-4 h-4" />
+                            Reservas Recibidas
+                          </Link>
+                        </>
+                      )}
 
-                    <div className="border-t border-gray-100 my-1"></div>
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 transition w-full text-left"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Cerrar Sesión
-                    </button>
-                  </div>
-                )}
-              </div>
+                      {isAdmin && (
+                        <>
+                          <div className="border-t border-gray-100 my-1"></div>
+                          <Link
+                            to="/admin"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2 px-4 py-2 text-purple-700 hover:bg-purple-50 transition font-medium"
+                          >
+                            <LayoutDashboard className="w-4 h-4" />
+                            Panel de Admin
+                          </Link>
+                        </>
+                      )}
+
+                      <div className="border-t border-gray-100 my-1"></div>
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 transition w-full text-left"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Cerrar Sesión
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
             ) : (
               <Link
                 to="/login"
