@@ -1,6 +1,6 @@
 // authService.js - Servicio de autenticación
 
-import { apiPost, apiGet } from './api';
+import { apiPost, apiGet, storeJwtToken, clearJwtToken } from './api';
 
 /**
  * Inicia sesión con Google
@@ -9,13 +9,30 @@ import { apiPost, apiGet } from './api';
  */
 export const signInWithGoogle = async (idToken) => {
   try {
+    console.log('🔐 Iniciando sesión con Google...');
     const response = await apiPost('/api/usuarios/iniciarSesionConGoogle', {
       idToken,
     });
     
+    console.log('📥 Respuesta del backend:', response);
+    
+    // ✅ CRÍTICO: Guardar el JWT en localStorage
+    if (response.jwtToken) {
+      storeJwtToken(response.jwtToken);
+      console.log('✅ JWT guardado correctamente en localStorage');
+    } else {
+      console.warn('⚠️ No se recibió JWT del backend');
+    }
+    
+    // También guardar datos del usuario si es necesario
+    if (response.usuario) {
+      localStorage.setItem('userData', JSON.stringify(response.usuario));
+      console.log('✅ Datos de usuario guardados');
+    }
+    
     return response;
   } catch (error) {
-    console.error('Error en signInWithGoogle:', error);
+    console.error('❌ Error en signInWithGoogle:', error);
     throw error;
   }
 };
@@ -23,20 +40,50 @@ export const signInWithGoogle = async (idToken) => {
 /**
  * Registra un nuevo usuario con Google
  * @param {string} idToken - Token de Google OAuth
- * @param {number} rolUsuario - ID del rol (1: Común, 2: Comercio)
+ * @param {number} rolUsuario - ID del rol (16: Común, 3: Comercio, 2: Admin)
  * @returns {Promise<Object>} { usuario, jwtToken }
  */
 export const signUpWithGoogle = async (idToken, rolUsuario = 16) => {
   try {
+    console.log('📝 Registrando usuario con Google...');
     const response = await apiPost('/api/usuarios/registrarseConGoogle', {
       idToken,
       rolUsuario,
     });
     
+    console.log('📥 Respuesta del backend:', response);
+    
+    // ✅ CRÍTICO: Guardar el JWT en localStorage
+    if (response.jwtToken) {
+      storeJwtToken(response.jwtToken);
+      console.log('✅ JWT guardado correctamente en localStorage');
+    } else {
+      console.warn('⚠️ No se recibió JWT del backend');
+    }
+    
+    // También guardar datos del usuario
+    if (response.usuario) {
+      localStorage.setItem('userData', JSON.stringify(response.usuario));
+      console.log('✅ Datos de usuario guardados');
+    }
+    
     return response;
   } catch (error) {
-    console.error('Error en signUpWithGoogle:', error);
+    console.error('❌ Error en signUpWithGoogle:', error);
     throw error;
+  }
+};
+
+/**
+ * Cierra sesión del usuario
+ */
+export const signOut = () => {
+  try {
+    clearJwtToken();
+    localStorage.removeItem('userData');
+    console.log('✅ Sesión cerrada correctamente');
+  } catch (error) {
+    console.error('❌ Error al cerrar sesión:', error);
   }
 };
 
@@ -50,7 +97,7 @@ export const getUserProfile = async (userId) => {
     const response = await apiGet(`/api/usuarios/buscarIdUsuario/${userId}`);
     return response;
   } catch (error) {
-    console.error('Error en getUserProfile:', error);
+    console.error('❌ Error en getUserProfile:', error);
     throw error;
   }
 };
@@ -65,7 +112,7 @@ export const getUserByEmail = async (email) => {
     const response = await apiGet(`/api/usuarios/buscarEmail/${email}`);
     return response;
   } catch (error) {
-    console.error('Error en getUserByEmail:', error);
+    console.error('❌ Error en getUserByEmail:', error);
     throw error;
   }
 };
@@ -78,9 +125,15 @@ export const getUserByEmail = async (email) => {
 export const loginTest = async (email) => {
   try {
     const response = await apiPost('/api/usuarios/login-test', { email });
+    
+    // Guardar JWT si viene en la respuesta
+    if (response.token) {
+      storeJwtToken(response.token);
+    }
+    
     return response;
   } catch (error) {
-    console.error('Error en loginTest:', error);
+    console.error('❌ Error en loginTest:', error);
     throw error;
   }
 };
@@ -102,11 +155,37 @@ export const checkUserExists = async (email) => {
   }
 };
 
+/**
+ * Obtiene el usuario actual desde localStorage
+ * @returns {Object|null} Datos del usuario o null
+ */
+export const getCurrentUser = () => {
+  try {
+    const userData = localStorage.getItem('userData');
+    return userData ? JSON.parse(userData) : null;
+  } catch (error) {
+    console.error('❌ Error obteniendo usuario actual:', error);
+    return null;
+  }
+};
+
+/**
+ * Verifica si el usuario está autenticado
+ * @returns {boolean} true si está autenticado
+ */
+export const isAuthenticated = () => {
+  const token = localStorage.getItem('jwtToken');
+  return !!token;
+};
+
 export default {
   signInWithGoogle,
   signUpWithGoogle,
+  signOut,
   getUserProfile,
   getUserByEmail,
   loginTest,
   checkUserExists,
+  getCurrentUser,
+  isAuthenticated,
 };

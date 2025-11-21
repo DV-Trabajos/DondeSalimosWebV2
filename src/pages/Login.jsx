@@ -1,10 +1,10 @@
-// Login.jsx - Página de autenticación (Login y Registro)
+// Login.jsx - Página de autenticación mejorada con logo y mejor navegación
 
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import GoogleLoginButton from '../components/Auth/GoogleLoginButton';
 import { ROLES } from '../utils/constants';
-import { Beer, Users, Store, Shield } from 'lucide-react';
+import { Users, Store, Shield, ArrowLeft, Home } from 'lucide-react';
 
 const Login = () => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -16,6 +16,22 @@ const Login = () => {
 
   // Obtener la ruta desde donde vino (para redirigir después del login)
   const from = location.state?.from?.pathname || '/';
+
+  // Opciones de roles para registro
+  const roleOptions = [
+    {
+      id: ROLES.USUARIO_COMUN,
+      name: 'Usuario',
+      description: 'Busca y reserva en bares y restaurantes',
+      icon: Users,
+    },
+    {
+      id: ROLES.USUARIO_COMERCIO,
+      name: 'Dueño de Comercio',
+      description: 'Gestiona tu bar o restaurante',
+      icon: Store,
+    },
+  ];
 
   /**
    * Maneja el éxito de la autenticación
@@ -38,7 +54,7 @@ const Login = () => {
       setError('Usuario no registrado. Por favor, crea una cuenta.');
       setIsRegistering(true);
     } else {
-      setError(errorData.message || 'Error en la autenticación');
+      setError(errorData.message || 'Error en la autenticación. Intenta nuevamente.');
     }
     setSuccessMessage(null);
   };
@@ -52,52 +68,59 @@ const Login = () => {
     setSuccessMessage(null);
   };
 
-  /**
-   * Opciones de roles para el registro
-   */
-  const roleOptions = [
-    {
-      id: ROLES.USUARIO_COMUN,
-      name: 'Usuario Común',
-      description: 'Buscar lugares y hacer reservas',
-      icon: Users,
-      color: 'blue',
-    },
-    {
-      id: ROLES.USUARIO_COMERCIO,
-      name: 'Dueño de Comercio',
-      description: 'Gestionar tu bar o restaurante',
-      icon: Store,
-      color: 'purple',
-    },
-  ];
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary via-purple-600 to-pink-500 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        {/* Logo y título */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-full mb-4 shadow-lg">
-            <Beer className="w-12 h-12 text-primary" />
-          </div>
-          <h1 className="text-4xl font-bold text-white mb-2">
-            Donde Salimos
-          </h1>
-          <p className="text-white/90">
-            Descubre los mejores lugares para salir
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-purple-500 to-pink-500 flex items-center justify-center p-4">
+      {/* Botón de volver al inicio - Visible y destacado */}
+      <Link
+        to="/"
+        className="fixed top-6 left-6 bg-white/90 backdrop-blur-sm hover:bg-white text-gray-800 px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 shadow-lg hover:shadow-xl z-50"
+      >
+        <Home className="w-5 h-5" />
+        <span className="hidden sm:inline">Volver al Inicio</span>
+        <span className="sm:hidden">Inicio</span>
+      </Link>
 
+      <div className="w-full max-w-md">
         {/* Card principal */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
-          {/* Tabs Login/Registro - CORREGIDO */}
-          <div className="flex gap-2 mb-6">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 mb-6">
+          {/* Logo y título */}
+          <div className="text-center mb-8">
+            {/* Logo de Dónde Salimos */}
+            <Link to="/" className="inline-block mb-4 hover:opacity-80 transition">
+              <img
+                src="/logo3color.png"
+                alt="Dónde Salimos"
+                className="h-24 mx-auto"
+                onError={(e) => {
+                  // Fallback si no encuentra la imagen
+                  e.target.style.display = 'none';
+                  e.target.parentElement.innerHTML = `
+                    <div class="w-20 h-20 mx-auto bg-white rounded-full flex items-center justify-center shadow-lg">
+                      <svg class="w-12 h-12 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.414A2 2 0 0016.414 5L14 2.586A2 2 0 0012.586 2H9z"/>
+                      </svg>
+                    </div>
+                  `;
+                }}
+              />
+            </Link>
+            
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Dónde Salimos
+            </h1>
+            <p className="text-gray-600">
+              Descubre los mejores lugares para salir
+            </p>
+          </div>
+
+          {/* Tabs de Login/Registro */}
+          <div className="flex gap-3 mb-6">
             <button
               onClick={() => setIsRegistering(false)}
               className={`flex-1 py-3 px-4 rounded-lg font-semibold transition ${
                 !isRegistering
-                  ? 'bg-gray-200 text-gray-700'  // ACTIVO = GRIS
-                  : 'bg-primary text-white hover:bg-purple-700'  // INACTIVO = VIOLETA
+                  ? 'bg-gray-200 text-gray-700'
+                  : 'bg-primary text-white hover:bg-purple-700'
               }`}
             >
               Iniciar Sesión
@@ -106,8 +129,8 @@ const Login = () => {
               onClick={() => setIsRegistering(true)}
               className={`flex-1 py-3 px-4 rounded-lg font-semibold transition ${
                 isRegistering
-                  ? 'bg-gray-200 text-gray-700'  // ACTIVO = GRIS
-                  : 'bg-primary text-white hover:bg-purple-700'  // INACTIVO = VIOLETA
+                  ? 'bg-gray-200 text-gray-700'
+                  : 'bg-primary text-white hover:bg-purple-700'
               }`}
             >
               Registrarse
@@ -116,13 +139,13 @@ const Login = () => {
 
           {/* Mensajes */}
           {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg animate-pulse">
               <p className="text-red-700 text-sm">{error}</p>
             </div>
           )}
 
           {successMessage && (
-            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg animate-pulse">
               <p className="text-green-700 text-sm">{successMessage}</p>
             </div>
           )}
@@ -144,9 +167,9 @@ const Login = () => {
                       <button
                         key={role.id}
                         onClick={() => setSelectedRole(role.id)}
-                        className={`w-full p-4 rounded-lg border-2 transition text-left ${
+                        className={`w-full p-4 rounded-lg border-2 transition text-left transform hover:scale-105 ${
                           isSelected
-                            ? 'border-primary bg-primary/5'
+                            ? 'border-primary bg-primary/5 shadow-md'
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
@@ -242,14 +265,15 @@ const Login = () => {
           </p>
         </div>
 
-        {/* Botón para explorar sin cuenta */}
-        <div className="text-center mt-6">
-          <button
-            onClick={() => navigate('/')}
-            className="text-white hover:text-white/80 font-semibold transition"
+        {/* Botón alternativo para explorar sin cuenta - Más visible */}
+        <div className="text-center">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-6 py-3 rounded-lg font-semibold transition shadow-lg hover:shadow-xl"
           >
-            Explorar sin cuenta →
-          </button>
+            <Home className="w-5 h-5" />
+            Explorar sin registrarme
+          </Link>
         </div>
       </div>
     </div>
